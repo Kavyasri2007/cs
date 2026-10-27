@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Web Server Security Lab{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="hero-badge">IIIT Allahabad • Cyber Security Lab Assignment</div>
+    <h1 class="hero-title">Web Server Security Lab</h1>
+    <h3 class="hero-subtitle">Exploit, Understand, Defend — Four Critical Web Vulnerabilities</h3>
+    <p class="hero-description">
+        A single integrated platform built to demonstrate the mechanics of web vulnerabilities through reproducible, harmless exploits,
+        accompanied by side-by-side executable mitigations, root-cause source analyses, and viva defense explanations.
+    </p>
+</div>
+
+<!-- Four Vulnerability Cards Grid -->
+<div class="modules-grid">
+    {% for mod in modules %}
+    <div class="module-card">
+        <div class="card-top">
+            <span class="badge {{ mod.badge_class }}">{{ mod.badge }}</span>
+            <span class="module-number">Module {{ loop.index }}</span>
+        </div>
+        <h2 class="card-title">{{ mod.title }}</h2>
+        <div class="card-variant"><strong>Variant:</strong> {{ mod.variant }}</div>
+        <p class="card-summary">{{ mod.summary }}</p>
+        
+        <div class="card-mitigation-box">
+            <span class="mitigation-label">Mitigation Applied:</span>
+            <span class="mitigation-text">{{ mod.mitigation }}</span>
+        </div>
+
+        <div class="card-actions">
+            <a href="{{ mod.url }}" class="btn btn-primary btn-block">
+                Enter Module Lab &rarr;
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Project Ownership Declaration Table -->
+<div class="content-section mt-5">
+    <div class="section-header">
+        <h2>📋 Student Ownership Declaration</h2>
+        <p class="text-muted">Individual assignment contribution & viva demonstration assignment table</p>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered ownership-table">
+            <thead>
+                <tr>
+                    <th>Group Member</th>
+                    <th>Roll Number</th>
+                    <th>Assigned Vulnerability Category</th>
+                    <th>Selected Variant</th>
+                    <th>Demonstration Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Student 1 (Lead)</strong></td>
+                    <td><code>LIT2023xxx</code></td>
+                    <td>SQL Injection (SQLi)</td>
+                    <td>Authentication Bypass via Tautology</td>
+                    <td>Exploit walkthrough, unsafe string formatting & prepared statements</td>
+                </tr>
+                <tr>
+                    <td><strong>Student 2</strong></td>
+                    <td><code>LIT2023xxx</code></td>
+                    <td>OS Command Injection</td>
+                    <td>In-band Command Execution</td>
+                    <td>Diagnostic tool abuse, shell metacharacters & argument vector defense</td>
+                </tr>
+                <tr>
+                    <td><strong>Student 3</strong></td>
+                    <td><code>LIT2023xxx</code></td>
+                    <td>Cross-Site Scripting (XSS)</td>
+                    <td>Reflected XSS (Search Query)</td>
+                    <td>Browser parser execution, DOM injection & context-aware auto-escaping</td>
+                </tr>
+                <tr>
+                    <td><strong>Student 4</strong></td>
+                    <td><code>LIT2023xxx</code></td>
+                    <td>Cross-Site Request Forgery (CSRF)</td>
+                    <td>GET-based Forged Action</td>
+                    <td>Cross-origin navigation attack, SameSite=Lax behavior & Synchronizer Token</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="alert alert-info mt-3">
+        <strong>💡 Note for Viva Examiners:</strong> Each module contains an isolated executable vulnerable implementation, a working benign payload demonstration, a side-by-side corrected implementation, before-and-after outcome comparisons, and a dedicated viva question/answer panel.
+    </div>
+</div>
+{% endblock %}

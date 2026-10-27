@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CampusConnect{% endblock %} — Student Portal | IIIT Allahabad</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}">
+    <!-- Syntax highlighting for Demo Mode drawer -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+    <!-- Top University Banner / Header -->
+    <header class="portal-navbar">
+        <div class="portal-nav-container">
+            <div class="portal-brand">
+                <a href="{{ url_for('index') }}" class="portal-brand-link">
+                    <span class="portal-brand-logo">🎓</span>
+                    <div>
+                        <div class="portal-brand-title">CampusConnect</div>
+                        <div class="portal-brand-subtitle">Indian Institute of Information Technology, Allahabad</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="portal-nav-links">
+                {% if session.get('user_id') %}
+                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.path == '/dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="{{ url_for('notices') }}" class="nav-link {% if request.path == '/notices' %}active{% endif %}">Notices</a>
+                <a href="{{ url_for('support') }}" class="nav-link {% if request.path == '/support' %}active{% endif %}">Help & Support</a>
+                <a href="{{ url_for('profile_view') }}" class="nav-link {% if request.path == '/profile' %}active{% endif %}">My Profile</a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="nav-link {% if request.path == '/login' %}active{% endif %}">Student Login</a>
+                <a href="{{ url_for('notices') }}" class="nav-link {% if request.path == '/notices' %}active{% endif %}">Public Notices</a>
+                <a href="{{ url_for('support') }}" class="nav-link {% if request.path == '/support' %}active{% endif %}">Helpdesk</a>
+                {% endif %}
+            </nav>
+
+            <!-- User Status / Logout -->
+            <div class="portal-nav-user">
+                {% if session.get('user_id') %}
+                <div class="user-pill">
+                    <span class="user-avatar">👤</span>
+                    <span class="user-name">{{ session.get('full_name', 'Student') }}</span>
+                    <span class="user-id">({{ session.get('student_id', 'S2023') }})</span>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn-logout" title="Sign out of portal">Sign Out</a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-sm btn-primary">Sign In</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Portal Content -->
+    <main class="portal-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Portal Footer -->
+    <footer class="portal-footer">
+        <div class="portal-footer-container">
+            <div class="footer-col">
+                <strong>CampusConnect Student Portal</strong>
+                <p>Indian Institute of Information Technology, Allahabad • Devghat, Jhalwa, Prayagraj - 211015</p>
+            </div>
+            <div class="footer-col text-right">
+                <p>&copy; 2026 IIIT Allahabad. Academic & Student Affairs Division.</p>
+                <small class="text-muted">Cyber Security Educational Lab Project — Integrated Vulnerability Demonstrator</small>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Discreet Demo Mode Floating Trigger (Visible on local development only) -->
+    {% if is_local %}
+    <div class="demo-mode-trigger" id="demoTriggerBtn" title="Open Security Demonstration & Viva Controls">
+        <span class="trigger-icon">🛠️</span>
+        <span class="trigger-label">Demo Mode: 
+            <strong class="mode-indicator {% if demo_mode == 'vulnerable' %}text-danger{% else %}text-success{% endif %}">
+                {% if demo_mode == 'vulnerable' %}🔴 Vulnerable{% else %}🟢 Secure{% endif %}
+            </strong>
+        </span>
+    </div>
+
+    <!-- Demo Mode Drawer Partial -->
+    {% include "portal/demo_drawer.html" %}
+    {% endif %}
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="{{ url_for('static', filename='js/portal.js') }}"></script>
+</body>
+</html>

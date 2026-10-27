@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Web Server Security Lab{% endblock %} — IIIT Allahabad</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Syntax highlighting styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="{{ url_for('index') }}" class="brand-link">
+                    <span class="brand-icon">🛡️</span>
+                    <div>
+                        <div class="brand-title">Web Server Security Lab</div>
+                        <div class="brand-subtitle">Exploit, Understand, Defend — IIIT Allahabad</div>
+                    </div>
+                </a>
+            </div>
+            <nav class="nav-menu">
+                <a href="{{ url_for('index') }}" class="nav-item {% if request.path == '/' %}active{% endif %}">Dashboard</a>
+                <a href="{{ url_for('sqli.sqli_index') }}" class="nav-item {% if '/sqli' in request.path %}active{% endif %}">1. SQL Injection</a>
+                <a href="{{ url_for('cmd.cmd_index') }}" class="nav-item {% if '/cmd' in request.path %}active{% endif %}">2. OS Command Injection</a>
+                <a href="{{ url_for('xss.xss_index') }}" class="nav-item {% if '/xss' in request.path %}active{% endif %}">3. Reflected XSS</a>
+                <a href="{{ url_for('csrf.csrf_index') }}" class="nav-item {% if '/csrf' in request.path %}active{% endif %}">4. GET-based CSRF</a>
+            </nav>
+            <div class="nav-actions">
+                <button id="resetLabBtn" class="btn btn-sm btn-outline-warning" title="Resets SQLite database to original seeded records">
+                    🔄 Reset DB
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Lab Environment Warning Banner -->
+    <div class="lab-warning-banner">
+        <span>⚠️ <strong>ISOLATED EDUCATIONAL ENVIRONMENT:</strong> All vulnerable endpoints are strictly bound to local loopback (<code>127.0.0.1</code>) for academic study at IIIT Allahabad. Never deploy vulnerable code to production.</span>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p><strong>Cyber Security Assignment Lab</strong> — Indian Institute of Information Technology, Allahabad</p>
+            <p class="text-muted">Built for controlled local educational demonstrations & viva examinations. Uses Python 3, Flask, and SQLite.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="{{ url_for('static', filename='js/lab.js') }}"></script>
+</body>
+</html>

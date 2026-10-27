@@ -1,0 +1,126 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Student Dashboard — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Welcome Header Banner -->
+    <div class="welcome-card">
+        <div class="welcome-text-col">
+            <span class="portal-badge badge-light-blue">Spring Semester 2026</span>
+            <h1 class="welcome-title">Welcome back, {{ current_user.full_name if current_user else 'Alice Sharma' }}!</h1>
+            <p class="welcome-meta">
+                <span>🆔 Student ID: <strong>{{ current_user.student_id if current_user else 'S2023-042' }}</strong></span> • 
+                <span>📚 Program: <strong>{{ current_user.department if current_user else 'Computer Science & Engineering' }}</strong></span> • 
+                <span>🎓 {{ current_user.semester if current_user else 'VI Semester' }}</span>
+            </p>
+        </div>
+        <div class="welcome-actions">
+            <a href="{{ url_for('profile_view') }}" class="btn btn-outline-white">Edit Notification Settings</a>
+        </div>
+    </div>
+
+    <!-- Academic KPI Metrics Grid -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon icon-blue">📊</div>
+            <div class="metric-info">
+                <span class="metric-label">Cumulative GPA</span>
+                <span class="metric-value">{{ current_user.cgpa if current_user else '8.92' }} <small>/ 10.0</small></span>
+                <span class="metric-trend text-success">Dean's Honor Roll</span>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon icon-green">📅</div>
+            <div class="metric-info">
+                <span class="metric-label">Biometric Attendance</span>
+                <span class="metric-value">{{ current_user.attendance if current_user else '91%' }}</span>
+                <span class="metric-trend text-success">Eligible for End-Sem Exams (&ge;75%)</span>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon icon-purple">📑</div>
+            <div class="metric-info">
+                <span class="metric-label">Enrolled Courses</span>
+                <span class="metric-value">21 <small>Credits</small></span>
+                <span class="metric-trend text-muted">6 Theory • 3 Laboratory</span>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon icon-amber">🔔</div>
+            <div class="metric-info">
+                <span class="metric-label">Notification Mode</span>
+                <span class="metric-value text-sm">{{ current_user.notification_pref if current_user else 'Email & Portal Alerts' }}</span>
+                <span class="metric-trend text-primary"><a href="{{ url_for('profile_view') }}">Change &rarr;</a></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column Dashboard Layout -->
+    <div class="dashboard-split-grid">
+        <!-- Left: Quick Navigation Cards -->
+        <div class="dash-col">
+            <div class="portal-card">
+                <div class="card-header-clean">
+                    <h3>⚡ Quick Student Services</h3>
+                </div>
+                <div class="services-list">
+                    <a href="{{ url_for('notices') }}" class="service-item">
+                        <span class="service-icon">📢</span>
+                        <div>
+                            <strong>Campus Announcements & Notices</strong>
+                            <p>Check examination schedules, hackathon deadlines, and departmental circulars.</p>
+                        </div>
+                        <span class="service-arrow">&rarr;</span>
+                    </a>
+
+                    <a href="{{ url_for('support') }}" class="service-item">
+                        <span class="service-icon">🌐</span>
+                        <div>
+                            <strong>Campus IT Helpdesk & Network Diagnostic</strong>
+                            <p>Verify network latency to campus gateway and submit infrastructure tickets.</p>
+                        </div>
+                        <span class="service-arrow">&rarr;</span>
+                    </a>
+
+                    <a href="{{ url_for('profile_view') }}" class="service-item">
+                        <span class="service-icon">👤</span>
+                        <div>
+                            <strong>My Student Profile & Preferences</strong>
+                            <p>Review enrollment records, contact information, and alert channels.</p>
+                        </div>
+                        <span class="service-arrow">&rarr;</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Recent College Announcements -->
+        <div class="dash-col">
+            <div class="portal-card">
+                <div class="card-header-clean d-flex justify-content-between align-items-center">
+                    <h3>📌 Recent Campus Notices</h3>
+                    <a href="{{ url_for('notices') }}" class="btn-link">View All &rarr;</a>
+                </div>
+                <div class="notices-preview-list">
+                    {% for notice in recent_notices %}
+                    <div class="notice-preview-item">
+                        <div class="notice-meta-line">
+                            <span class="notice-cat-badge">{{ notice.category }}</span>
+                            <span class="notice-date">{{ notice.date_posted }}</span>
+                        </div>
+                        <h4 class="notice-preview-title">{{ notice.title }}</h4>
+                        <p class="notice-preview-snippet">{{ notice.content[:120] }}...</p>
+                    </div>
+                    {% else %}
+                    <p class="text-muted p-3">No announcements posted at this time.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

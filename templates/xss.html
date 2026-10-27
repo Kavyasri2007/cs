@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Module 3: Reflected Cross-Site Scripting (XSS){% endblock %}
+
+{% block content %}
+<div class="module-header">
+    <div class="breadcrumb">
+        <a href="{{ url_for('index') }}">Dashboard</a> &gt; <span>Module 3: Reflected XSS</span>
+    </div>
+    <div class="module-title-row">
+        <h1>Module 3: Reflected Cross-Site Scripting (XSS)</h1>
+        <span class="badge badge-primary">Variant: Reflected XSS via Search Query</span>
+    </div>
+    <p class="module-lead">
+        Demonstrating how reflecting unsanitized and unencoded user input into an HTML response
+        leads the browser to interpret data as executable client-side JavaScript.
+    </p>
+    <div class="alert alert-secondary py-1 my-2">
+        <small><strong>Note on Ethical & Academic Guidelines:</strong> In strict compliance with assignment instructions, this demonstration uses harmless alert and DOM indicators. No <code>document.cookie</code> extraction or session theft payloads are included.</small>
+    </div>
+</div>
+
+<!-- Section 1: Concept & Security Impact -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>1. Concept & Security Impact</h3>
+    </div>
+    <div class="card-body">
+        <p>
+            <strong>Cross-Site Scripting (XSS)</strong> occurs when an application receives untrusted data and includes it in a web page sent to the browser
+            without proper validation or context-aware encoding.
+        </p>
+        <p>
+            <strong>Reflected XSS:</strong> In reflected XSS, the injected payload is part of the immediate request (e.g. search query parameters in the URL)
+            and is reflected back by the server in the immediate response. When the victim clicks an attacker-crafted link, their browser executes
+            the script within the trust boundary of the vulnerable application.
+        </p>
+        <p>
+            <strong>Impact:</strong> Attackers can manipulate page content (defacement), redirect users to malicious clones, capture keystrokes, or issue unauthorized requests from the user's browser.
+        </p>
+    </div>
+</div>
+
+<!-- Visible XSS Proof Banner (Triggered by DOM payloads for visual proof) -->
+<div id="xss-exec-banner" class="alert alert-danger mb-4" style="display: none; border: 2px dashed #dc3545; background-color: #f8d7da;">
+    <h4 class="text-danger mb-1">🚨 HARMFUL-PROOF: Reflected JavaScript Executed in Browser Context!</h4>
+    <p class="mb-0" id="xss-exec-text">An injected DOM payload or script executed directly within this page origin.</p>
+</div>
+
+<!-- Side-by-Side Demonstrations Grid -->
+<div class="row-grid mb-4">
+    <!-- Vulnerable Implementation Column -->
+    <div class="column-card vulnerable-card">
+        <div class="card-status-strip strip-vulnerable">
+            <span>⚠️ INTENTIONALLY VULNERABLE SEARCH (LOCAL LAB ONLY)</span>
+        </div>
+        <div class="card-body">
+            <h4>2. Vulnerable Search Page</h4>
+            <p class="text-sm text-muted">
+                Endpoint: <code>GET /xss/vulnerable/search?q=...</code><br>
+                Flaw: Unencoded query rendered directly into DOM via <code>Markup()</code> / raw HTML.
+            </p>
+
+            <form action="{{ url_for('xss.vulnerable_search') }}" method="GET" class="lab-form" id="vulnerableXssForm">
+                <div class="form-group">
+                    <label for="vuln_q">Search Library Articles:</label>
+                    <input type="text" name="q" id="vuln_q" class="form-control" placeholder="Search articles or enter payload..." value="{{ raw_query if mode == 'vulnerable' else '' }}" required>
+                </div>
+
+                <div class="payload-box mb-3">
+                    <span class="payload-title">💡 1-Click Harmless Exploit Payloads:</span>
+                    <div class="btn-group-payloads">
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="loadXssPayload('vuln', '<script>alert(\'Reflected XSS Demonstrated - Insecure Page Executed Script!\');<\/script>')">
+                            Payload 1: <code>&lt;script&gt;alert()&lt;/script&gt;</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="loadXssPayload('vuln', '<img src=x onerror=\'document.getElementById(\x22xss-exec-banner\x22).style.display=\x22block\x22; document.getElementById(\x22xss-exec-text\x22).innerText=\x22[DOM PROOF: Image onerror executed reflected JavaScript]\x22;\'>')">
+                            Payload 2: <code>&lt;img onerror DOM proof&gt;</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary" onclick="loadXssPayload('vuln', 'Security')">
+                            Normal Search: <code>Security</code>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-danger btn-block">
+                    Search on Vulnerable Page
+                </button>
+            </form>
+
+            <!-- Observable Vulnerable Output -->
+            {% if mode == 'vulnerable' %}
+            <div class="result-box mt-3 result-danger">
+                <h5>Rendered Response (Vulnerable):</h5>
+                <div class="result-item"><strong>Submitted Raw Input:</strong> <code>{{ raw_query }}</code></div>
+                <div class="result-item"><strong>Search Result Header:</strong>
+                    <div class="p-2 border rounded bg-white mt-1">
+                        <!-- INTENTIONALLY VULNERABLE RENDERING: Output is rendered directly without escaping -->
+                        <span>Showing results for: </span>
+                        <strong>{{ vulnerable_query }}</strong>
+                    </div>
+                </div>
+                <div class="result-item mt-2">
+                    <small class="text-danger">
+                        🔎 <em>Notice: If a script payload was submitted, your browser executed the alert or triggered the red DOM banner above because the HTML parser interpreted the tags as markup.</em>
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Secure Implementation Column -->
+    <div class="column-card secure-card">
+        <div class="card-status-strip strip-secure">
+            <span>🛡️ SECURE MITIGATED SEARCH (CONTEXT-AWARE AUTO-ESCAPING)</span>
+        </div>
+        <div class="card-body">
+            <h4>6. Secure Mitigated Search</h4>
+            <p class="text-sm text-muted">
+                Endpoint: <code>GET /xss/secure/search?q=...</code><br>
+                Fix: Jinja2 native automatic HTML entity encoding (<code>{{ '{{ query }}' }}</code>).
+            </p>
+
+            <form action="{{ url_for('xss.secure_search') }}" method="GET" class="lab-form" id="secureXssForm">
+                <div class="form-group">
+                    <label for="sec_q">Search Library Articles:</label>
+                    <input type="text" name="q" id="sec_q" class="form-control" placeholder="Search articles or enter payload..." value="{{ raw_query if mode == 'secure' else '' }}" required>
+                </div>
+
+                <div class="payload-box mb-3">
+                    <span class="payload-title">💡 Retest Identical Payloads:</span>
+                    <div class="btn-group-payloads">
+                        <button type="button" class="btn btn-xs btn-outline-success" onclick="loadXssPayload('sec', '<script>alert(\'Reflected XSS Demonstrated - Insecure Page Executed Script!\');<\/script>')">
+                            Retest <code>&lt;script&gt;alert()&lt;/script&gt;</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-success" onclick="loadXssPayload('sec', '<img src=x onerror=\'document.getElementById(\x22xss-exec-banner\x22).style.display=\x22block\x22;\'>')">
+                            Retest <code>&lt;img onerror DOM proof&gt;</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary" onclick="loadXssPayload('sec', 'Security')">
+                            Legitimate Search: <code>Security</code>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-block">
+                    Search on Secure Page
+                </button>
+            </form>
+
+            <!-- Observable Secure Output -->
+            {% if mode == 'secure' %}
+            <div class="result-box mt-3 result-shielded">
+                <h5>Rendered Response (Secure):</h5>
+                <div class="result-item"><strong>Submitted Raw Input:</strong> <code>{{ raw_query }}</code></div>
+                <div class="result-item"><strong>Search Result Header:</strong>
+                    <div class="p-2 border rounded bg-white mt-1">
+                        <!-- SECURE RENDERING: Jinja automatically converts < to &lt; and > to &gt; -->
+                        <span>Showing results for: </span>
+                        <strong>{{ secure_query }}</strong>
+                    </div>
+                </div>
+                <div class="result-item mt-2">
+                    <small class="text-success font-weight-bold">
+                        🛡️ <em>Defense Verified: The payload is safely rendered as harmless literal text on the screen. No JavaScript was executed.</em>
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Section 4 & 5: Root Cause and Code Excerpts -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>5. Root Cause & Source Code Comparison</h3>
+    </div>
+    <div class="card-body">
+        <div class="code-comparison-grid">
+            <div class="code-col">
+                <h5 class="text-danger">❌ Vulnerable Implementation (Root Cause)</h5>
+                <p class="text-muted text-sm">Disables framework escaping by marking untrusted input as safe HTML:</p>
+                <pre><code class="language-python">{{ vulnerable_code }}</code></pre>
+                <div class="alert alert-danger mt-2">
+                    <strong>Mechanics:</strong> When untrusted input is marked with <code>Markup()</code> or template filter <code>| safe</code>, Jinja emits raw characters. When the browser tokenizes the response, it encounters <code>&lt;script&gt;</code> or <code>&lt;img onerror=...&gt;</code> and switches its parser state into JavaScript execution.
+                </div>
+            </div>
+            <div class="code-col">
+                <h5 class="text-success">✅ Secure Implementation (Context-Aware Auto-Escaping)</h5>
+                <p class="text-muted text-sm">Relies on default Jinja2 HTML entity encoding:</p>
+                <pre><code class="language-python">{{ secure_code }}</code></pre>
+                <div class="alert alert-success mt-2">
+                    <strong>Mechanics:</strong> Jinja2 automatically converts <code>&lt;</code> to <code>&amp;lt;</code>, <code>&gt;</code> to <code>&amp;gt;</code>, and <code>&quot;</code> to <code>&amp;quot;</code>. The browser parser renders the characters as visual glyphs without transitioning into script execution mode.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 8: Before-and-After Comparison Table -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>8. Before-and-After Results Comparison</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Test Input Payload</th>
+                        <th>Vulnerable Endpoint Behavior</th>
+                        <th>Secure Endpoint Behavior</th>
+                        <th>Underlying Browser Mechanism</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>&lt;script&gt;alert(1)&lt;/script&gt;</code></td>
+                        <td><span class="badge badge-danger">Executed</span> Pops browser alert dialog</td>
+                        <td><span class="badge badge-success">Inert Text</span> Renders literal <code>&lt;script&gt;alert(1)&lt;/script&gt;</code> text</td>
+                        <td>Browser parser interprets <code>&amp;lt;script&amp;gt;</code> strictly as character data within the text node.</td>
+                    </tr>
+                    <tr>
+                        <td><code>&lt;img src=x onerror=...&gt;</code></td>
+                        <td><span class="badge badge-danger">Executed</span> Fires onerror DOM event</td>
+                        <td><span class="badge badge-success">Inert Text</span> Displays text characters on screen</td>
+                        <td>No image element is instantiated in the DOM tree.</td>
+                    </tr>
+                    <tr>
+                        <td><code>Security</code></td>
+                        <td><span class="badge badge-secondary">Search Matched</span> 5 articles shown</td>
+                        <td><span class="badge badge-success">Search Matched</span> 5 articles shown cleanly</td>
+                        <td>Legitimate alphanumeric searches work identically across both versions.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Section 9 & 10: Viva Preparation & Explanations -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h3>9 & 10. Viva Preparation: Questions, Answers & Alternative Mitigations</h3>
+    </div>
+    <div class="card-body">
+        <div class="accordion">
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q1: What are the three primary types of XSS (Stored, Reflected, DOM-based)?</summary>
+                <div class="viva-answer mt-2">
+                    <ul>
+                        <li><strong>Reflected XSS:</strong> The payload is delivered via the request (e.g. query string) and reflected immediately in the server's HTTP response. Requires victim to click a malicious link.</li>
+                        <li><strong>Stored (Persistent) XSS:</strong> The malicious payload is saved permanently in a datastore (e.g. database comment, forum post) and delivered to all users who subsequently view the stored data.</li>
+                        <li><strong>DOM-based XSS:</strong> The vulnerability exists entirely on the client side; client JavaScript reads data from a source (e.g. <code>location.search</code>) and writes it unsafely to a dangerous sink (e.g. <code>element.innerHTML</code>, <code>eval()</code>) without server roundtrip.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q2: Why does context-aware output encoding matter?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> Different locations in an HTML document parse data using different state machines. HTML body encoding (<code>&lt;</code> to <code>&amp;lt;</code>) is effective between HTML tags, but if untrusted input is placed inside an attribute (e.g. <code>&lt;input value="USER_INPUT"&gt;</code>) or a JavaScript block (e.g. <code>&lt;script&gt;var name = "USER_INPUT";&lt;/script&gt;</code>), standard HTML escaping is insufficient. Context-aware encoding ensures data is escaped according to the specific grammar of the target sink (HTML Body, Attribute, JavaScript, CSS, or URL).
+                    </p>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q3: What are the exact capabilities and limitations of HttpOnly cookies?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> 
+                        Setting <code>HttpOnly</code> on session cookies instructs the browser that the cookie must not be accessible via client-side scripts (<code>document.cookie</code>).
+                    </p>
+                    <div class="alert alert-warning mb-0">
+                        <strong>Crucial Viva Clarification:</strong> <code>HttpOnly</code> <em>mitigates session hijacking</em> via cookie theft, but <strong>does NOT prevent XSS itself</strong>. Even with HttpOnly enabled, injected JavaScript can still perform arbitrary actions: deface the page, log keystrokes, capture form inputs, or send authenticated HTTP requests (XHR/fetch) using ambient session credentials!
+                    </div>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q4: What role does Content Security Policy (CSP) play?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> Content Security Policy (CSP) is an HTTP header (e.g. <code>Content-Security-Policy: default-src 'self'</code>) that restricts the resources (scripts, images, stylesheets) the browser is allowed to load and execute. By disabling inline scripts (disallowing <code>'unsafe-inline'</code>) and requiring cryptographic nonces or hashes for approved scripts, CSP acts as a robust second line of defense against XSS.
+                    </p>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+{% endblock %}

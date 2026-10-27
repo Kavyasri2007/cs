@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Module 2: OS Command Injection — In-band{% endblock %}
+
+{% block content %}
+<div class="module-header">
+    <div class="breadcrumb">
+        <a href="{{ url_for('index') }}">Dashboard</a> &gt; <span>Module 2: OS Command Injection</span>
+    </div>
+    <div class="module-title-row">
+        <h1>Module 2: OS Command Injection</h1>
+        <span class="badge badge-warning">Variant: In-band Command Injection</span>
+    </div>
+    <p class="module-lead">
+        Demonstrating how invoking the system command shell with untrusted user input enables attackers
+        to chain arbitrary operating-system commands and receive the output in-band.
+    </p>
+    <div class="platform-info-badge">
+        <span>💻 Detected Host Environment: <strong>{{ os_name }}</strong> (Shell interpreter: {% if is_windows %}<code>cmd.exe / powershell</code>{% else %}<code>/bin/sh</code>{% endif %})</span>
+    </div>
+</div>
+
+<!-- Section 1: Concept & Security Impact -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>1. Concept & Security Impact</h3>
+    </div>
+    <div class="card-body">
+        <p>
+            <strong>OS Command Injection</strong> occurs when an application executes host operating system commands constructed from untrusted user input.
+            When an application passes input to a shell (e.g. via <code>shell=True</code> in Python, <code>system()</code> in C, or backticks),
+            special shell metacharacters (such as <code>&amp;</code>, <code>&amp;&amp;</code>, <code>|</code>, <code>||</code>, <code>;</code>) are evaluated
+            by the shell interpreter, enabling an attacker to append additional arbitrary commands.
+        </p>
+        <p>
+            <strong>In-Band vs Blind Injection:</strong> In <em>in-band</em> command injection, the application returns the direct standard output (stdout/stderr)
+            of the executed command back to the user's HTTP response. In <em>blind</em> injection, output is not directly visible, requiring out-of-band channels or time delays (e.g. <code>sleep</code>) for confirmation.
+        </p>
+        <div class="alert alert-warning">
+            <strong>Lab Safety Guarantee:</strong> All demonstration payloads in this lab use harmless diagnostic commands (e.g. <code>whoami</code> or printing a fixed proof banner <code>echo [LAB-PROOF]</code>). Destructive commands or modifications outside this isolated project are strictly prohibited.
+        </div>
+    </div>
+</div>
+
+<!-- Side-by-Side Demonstrations Grid -->
+<div class="row-grid mb-4">
+    <!-- Vulnerable Implementation Column -->
+    <div class="column-card vulnerable-card">
+        <div class="card-status-strip strip-vulnerable">
+            <span>⚠️ INTENTIONALLY VULNERABLE DIAGNOSTIC TOOL (LOCAL LAB ONLY)</span>
+        </div>
+        <div class="card-body">
+            <h4>2. Vulnerable Diagnostic Tool</h4>
+            <p class="text-sm text-muted">
+                Endpoint: <code>POST /cmd/vulnerable/diagnose</code><br>
+                Flaw: Passes user input directly into shell execution (<code>shell=True</code>).
+            </p>
+
+            <form action="{{ url_for('cmd.vulnerable_diagnose') }}" method="POST" class="lab-form" id="vulnerableCmdForm">
+                <div class="form-group">
+                    <label for="vuln_target">Target Host or IP to Ping:</label>
+                    <input type="text" name="target" id="vuln_target" class="form-control" placeholder="e.g. 127.0.0.1 or payload" required>
+                </div>
+
+                <div class="payload-box mb-3">
+                    <span class="payload-title">💡 1-Click Platform-Aware Harmless Payloads:</span>
+                    <div class="btn-group-payloads">
+                        {% if is_windows %}
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="loadCmdPayload('vuln', '127.0.0.1 & echo [LAB-PROOF: OS Command Executed] & whoami')">
+                            Windows: <code>127.0.0.1 & echo [LAB-PROOF] & whoami</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="loadCmdPayload('vuln', '127.0.0.1 & whoami')">
+                            Windows: <code>127.0.0.1 & whoami</code>
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="loadCmdPayload('vuln', '127.0.0.1 ; echo [LAB-PROOF: OS Command Executed] ; whoami')">
+                            Linux: <code>127.0.0.1 ; echo [LAB-PROOF] ; whoami</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="loadCmdPayload('vuln', '127.0.0.1 ; whoami')">
+                            Linux: <code>127.0.0.1 ; whoami</code>
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-xs btn-outline-secondary" onclick="loadCmdPayload('vuln', '127.0.0.1')">
+                            Normal Clean: <code>127.0.0.1</code>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-danger btn-block">
+                    Run Vulnerable Ping
+                </button>
+            </form>
+
+            <!-- Observable Vulnerable Output -->
+            {% if vulnerable_result %}
+            <div class="result-box mt-3 {% if vulnerable_result.injected_detected %}result-danger{% else %}result-neutral{% endif %}">
+                <h5>Diagnostic Terminal Output:</h5>
+                <div class="result-item"><strong>Status:</strong>
+                    {% if vulnerable_result.injected_detected %}
+                        <span class="text-danger font-weight-bold">🚨 EXPLOIT SUCCEEDED: Chained OS Command Executed In-Band!</span>
+                    {% else %}
+                        <span class="text-muted">Standard Ping Executed</span>
+                    {% endif %}
+                </div>
+                <div class="result-item"><strong>Command Passed to Shell:</strong><br>
+                    <code>{{ vulnerable_result.executed_command }}</code>
+                </div>
+                <div class="result-item"><strong>Terminal Standard Output:</strong>
+                    <pre class="terminal-box"><code>{{ vulnerable_result.output }}</code></pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Secure Implementation Column -->
+    <div class="column-card secure-card">
+        <div class="card-status-strip strip-secure">
+            <span>🛡️ SECURE MITIGATED DIAGNOSTIC TOOL (ARG-VECTOR & ALLOW-LIST)</span>
+        </div>
+        <div class="card-body">
+            <h4>6. Secure Mitigated Tool</h4>
+            <p class="text-sm text-muted">
+                Endpoint: <code>POST /cmd/secure/diagnose</code><br>
+                Fix: Strict regex allow-list + direct binary invocation without shell (<code>shell=False</code>).
+            </p>
+
+            <form action="{{ url_for('cmd.secure_diagnose') }}" method="POST" class="lab-form" id="secureCmdForm">
+                <div class="form-group">
+                    <label for="sec_target">Target Host or IP to Ping:</label>
+                    <input type="text" name="target" id="sec_target" class="form-control" placeholder="e.g. 127.0.0.1 or payload" required>
+                </div>
+
+                <div class="payload-box mb-3">
+                    <span class="payload-title">💡 Retest Identical Payloads:</span>
+                    <div class="btn-group-payloads">
+                        {% if is_windows %}
+                        <button type="button" class="btn btn-xs btn-outline-success" onclick="loadCmdPayload('sec', '127.0.0.1 & echo [LAB-PROOF: OS Command Executed] & whoami')">
+                            Retest: <code>127.0.0.1 & echo [LAB-PROOF] & whoami</code>
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-xs btn-outline-success" onclick="loadCmdPayload('sec', '127.0.0.1 ; echo [LAB-PROOF: OS Command Executed] ; whoami')">
+                            Retest: <code>127.0.0.1 ; echo [LAB-PROOF] ; whoami</code>
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-xs btn-outline-secondary" onclick="loadCmdPayload('sec', '127.0.0.1')">
+                            Legitimate Host: <code>127.0.0.1</code>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-block">
+                    Run Secure Ping
+                </button>
+            </form>
+
+            <!-- Observable Secure Output -->
+            {% if secure_result %}
+            <div class="result-box mt-3 {% if secure_result.validation_rejected %}result-shielded{% else %}result-success{% endif %}">
+                <h5>Defense Verification Output:</h5>
+                <div class="result-item"><strong>Status:</strong>
+                    {% if secure_result.validation_rejected %}
+                        <span class="text-success font-weight-bold">🛡️ INJECTION BLOCKED: Input validation rejected shell metacharacters!</span>
+                    {% else %}
+                        <span class="text-success font-weight-bold">✅ SAFE EXECUTION: Direct binary invocation without shell.</span>
+                    {% endif %}
+                </div>
+                <div class="result-item"><strong>Execution Details:</strong><br>
+                    <code>{{ secure_result.executed_command }}</code>
+                </div>
+                <div class="result-item"><strong>Terminal Standard Output / Defense Log:</strong>
+                    <pre class="terminal-box"><code>{{ secure_result.output }}</code></pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Section 4 & 5: Root Cause and Code Excerpts -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>5. Root Cause & Source Code Comparison</h3>
+    </div>
+    <div class="card-body">
+        <div class="code-comparison-grid">
+            <div class="code-col">
+                <h5 class="text-danger">❌ Vulnerable Implementation (Root Cause)</h5>
+                <p class="text-muted text-sm">Passes unvalidated string to shell with shell=True:</p>
+                <pre><code class="language-python">{{ vulnerable_code }}</code></pre>
+                <div class="alert alert-danger mt-2">
+                    <strong>Mechanics:</strong> <code>shell=True</code> spawns <code>cmd.exe</code> (Windows) or <code>/bin/sh</code> (Unix). The shell parses <code>&</code> or <code>;</code> as command separators and executes all subsequent tokens as independent operating system commands.
+                </div>
+            </div>
+            <div class="code-col">
+                <h5 class="text-success">✅ Secure Implementation (Defense-in-Depth)</h5>
+                <p class="text-muted text-sm">Strict validation regex + argument vector execution:</p>
+                <pre><code class="language-python">{{ secure_code }}</code></pre>
+                <div class="alert alert-success mt-2">
+                    <strong>Mechanics:</strong> 1) Metacharacters are caught and rejected by <code>^[a-zA-Z0-9.-]+$</code>. 2) <code>shell=False</code> invokes <code>CreateProcess</code>/<code>execve</code> directly, ensuring arguments are never parsed by a shell interpreter.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 8: Before-and-After Comparison Table -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>8. Before-and-After Results Comparison</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Test Input</th>
+                        <th>Vulnerable Route Behavior</th>
+                        <th>Secure Route Behavior</th>
+                        <th>Security Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>127.0.0.1 & whoami</code></td>
+                        <td><span class="badge badge-danger">Exploit Succeeded</span> Output contains user identity and ping output</td>
+                        <td><span class="badge badge-success">Blocked (Validation Rejection)</span> Execution aborted</td>
+                        <td>The <code>&</code> metacharacter fails the allow-list regex. Even if passed without shell, it is treated as an invalid hostname string.</td>
+                    </tr>
+                    <tr>
+                        <td><code>127.0.0.1 & echo [LAB-PROOF]</code></td>
+                        <td><span class="badge badge-danger">Proof Executed</span> Displays <code>[LAB-PROOF]</code> banner in terminal</td>
+                        <td><span class="badge badge-success">Blocked</span> Execution aborted</td>
+                        <td>Shell interpreter is not invoked; input cannot spawn second command.</td>
+                    </tr>
+                    <tr>
+                        <td><code>127.0.0.1</code></td>
+                        <td><span class="badge badge-secondary">Ping Output</span> 1 packet transmitted</td>
+                        <td><span class="badge badge-success">Ping Output</span> 1 packet transmitted cleanly</td>
+                        <td>Legitimate diagnostic requests succeed safely under both handlers.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Section 9 & 10: Viva Preparation & Explanations -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h3>9 & 10. Viva Preparation: Questions, Answers & Alternative Mitigations</h3>
+    </div>
+    <div class="card-body">
+        <div class="accordion">
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q1: What is the fundamental difference between OS Command Injection and SQL Injection?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> While both are injection flaws involving unsafe concatenation, their execution environments and impacts differ significantly:
+                    </p>
+                    <ul>
+                        <li><strong>SQL Injection:</strong> Executes within the database engine's query parser, compromising database tables, records, and relational schemas.</li>
+                        <li><strong>OS Command Injection:</strong> Executes within the host operating system's shell interpreter (e.g. <code>cmd.exe</code>, <code>bash</code>), directly compromising the server host, underlying processes, and filesystem.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q2: How do shell metacharacters change command interpretation?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> Shell metacharacters are tokens reserved by shell interpreters to control execution flow:
+                    </p>
+                    <ul>
+                        <li><code>&</code> / <code>;</code>: Sequential command separators (executes second command regardless of first command's exit code).</li>
+                        <li><code>&&</code>: Logical AND separator (executes second command only if first succeeds).</li>
+                        <li><code>|</code>: Pipe (directs stdout of first command to stdin of second).</li>
+                        <li><code>`cmd`</code> or <code>$(cmd)</code>: Command substitution (evaluates nested command first).</li>
+                    </ul>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q3: Why is argument-vector execution (shell=False) superior to blacklist filtering?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> Blacklist filtering is notoriously brittle because attackers can bypass filters using alternative metacharacters (newlines, null bytes, environment variables, globbing, base64 decoding).
+                        Argument-vector execution (e.g. <code>subprocess.run(["ping", target], shell=False)</code>) uses OS system calls (<code>CreateProcess</code> on Windows or <code>execve</code> on POSIX) directly. No shell is ever invoked to parse syntax, so metacharacters are harmlessly treated as raw string arguments.
+                    </p>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q4: What alternative mitigation techniques should be considered?</summary>
+                <div class="viva-answer mt-2">
+                    <ul>
+                        <li><strong>Replace Shell with Native APIs:</strong> Use native Python libraries (e.g. <code>socket.gethostbyname</code>, <code>ping3</code>) instead of executing external system binaries.</li>
+                        <li><strong>Strict Allow-List Validation:</strong> Reject any input that does not match a strict regex (e.g. <code>^[a-zA-Z0-9.-]+$</code>).</li>
+                        <li><strong>Execution Timeouts:</strong> Enforce short execution deadlines (e.g. 3–5 seconds) to prevent denial of service from hanging commands.</li>
+                        <li><strong>Least Privilege & Sandboxing:</strong> Run the web server under a restricted OS user account with no administrative/sudo privileges, inside a container or chroot jail.</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+{% endblock %}

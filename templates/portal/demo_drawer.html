@@ -1,0 +1,183 @@
+<!-- Discreet Demo Mode Offcanvas Drawer (Local Development Only) -->
+<div class="demo-drawer-backdrop" id="demoDrawerBackdrop"></div>
+<aside class="demo-drawer" id="demoDrawer">
+    <div class="drawer-header">
+        <div class="drawer-title-group">
+            <span class="drawer-icon">🛡️</span>
+            <div>
+                <h3 class="drawer-title">Cyber Security Lab Controls</h3>
+                <small class="text-muted">Viva Presentation & Vulnerability Mode Inspector</small>
+            </div>
+        </div>
+        <button class="drawer-close-btn" id="demoDrawerCloseBtn">&times;</button>
+    </div>
+
+    <div class="drawer-body">
+        <!-- Mode Switcher Card -->
+        <div class="drawer-card mode-switch-card">
+            <h4>Active Implementation Mode</h4>
+            <p class="text-sm text-muted mb-2">Toggle between the intentionally vulnerable code and the mitigated defense for this portal:</p>
+            <div class="mode-switch-group">
+                <button type="button" class="btn-mode-toggle {% if demo_mode == 'vulnerable' %}active-vuln{% endif %}" onclick="switchDemoMode('vulnerable')">
+                    🔴 Intentionally Vulnerable
+                </button>
+                <button type="button" class="btn-mode-toggle {% if demo_mode == 'secure' %}active-sec{% endif %}" onclick="switchDemoMode('secure')">
+                    🟢 Secure Mitigated
+                </button>
+            </div>
+            <div class="mode-desc-note mt-2">
+                {% if demo_mode == 'vulnerable' %}
+                <small class="text-danger font-weight-bold">⚠️ VULNERABLE ACTIVE: Portal handlers execute unvalidated queries, commands, raw HTML reflection, or state-changing GETs.</small>
+                {% else %}
+                <small class="text-success font-weight-bold">🛡️ SECURE DEFENSE ACTIVE: Parameterized queries, allow-list filters, auto-escaping, and CSRF tokens enforced.</small>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contextual Vulnerability Inspector -->
+        {% if request.path == '/login' %}
+        <!-- Module 1: SQLi -->
+        <div class="drawer-card">
+            <div class="drawer-badge badge-danger">Module 1: SQL Injection (SQLi)</div>
+            <h4>Authentication Bypass via Tautology</h4>
+            <p class="text-sm">Location: <strong>Student Login Form</strong></p>
+            
+            <div class="payload-box mb-2">
+                <strong>💡 1-Click Harmless Test Payloads:</strong>
+                <div class="btn-group-payloads mt-1">
+                    <button type="button" class="btn btn-xs btn-outline-danger" onclick="fillLoginForm('\' OR \'1\'=\'1\' --', 'anypass')">
+                        Payload: <code>' OR '1'='1' --</code>
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline-danger" onclick="fillLoginForm('admin\' --', 'anypass')">
+                        Payload: <code>admin' --</code>
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline-primary" onclick="fillLoginForm('alice', 'Alice#Pass2026')">
+                        Legitimate: <code>alice / Alice#Pass2026</code>
+                    </button>
+                </div>
+            </div>
+
+            <div class="viva-summary-box text-sm">
+                <p><strong>Mechanics:</strong> Database schema stores password hashes only (zero plaintext). Unsafe f-string query allows <code>--</code> comment token to truncate the password constraint.</p>
+                <p><strong>Expected Result:</strong></p>
+                <ul class="pl-3">
+                    <li><em>Vulnerable Mode:</em> Successfully authenticates as Administrator without knowing password.</li>
+                    <li><em>Secure Mode:</em> Parameterized query treats input strictly as literal text; rejected.</li>
+                </ul>
+            </div>
+        </div>
+
+        {% elif request.path == '/notices' %}
+        <!-- Module 3: Reflected XSS -->
+        <div class="drawer-card">
+            <div class="drawer-badge badge-primary">Module 3: Reflected XSS</div>
+            <h4>Untrusted Search Query Execution</h4>
+            <p class="text-sm">Location: <strong>Notices Keyword Search</strong></p>
+
+            <div class="payload-box mb-2">
+                <strong>💡 1-Click Harmless Test Payloads:</strong>
+                <div class="btn-group-payloads mt-1">
+                    <button type="button" class="btn btn-xs btn-outline-danger" onclick="fillSearchForm('<script>alert(\'Reflected XSS Demonstrated - Insecure Page Executed Script!\');<\/script>')">
+                        Alert Script: <code>&lt;script&gt;alert()&lt;/script&gt;</code>
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline-danger" onclick="fillSearchForm('<img src=x onerror=\'document.getElementById(\x22xss-exec-banner\x22).style.display=\x22block\x22;\'>')">
+                        DOM Proof: <code>&lt;img onerror&gt;</code>
+                    </button>
+                </div>
+            </div>
+
+            <div class="viva-summary-box text-sm">
+                <p><strong>Mechanics:</strong> Untrusted query reflected into DOM. Zero cookies accessed.</p>
+                <p><strong>Expected Result:</strong></p>
+                <ul class="pl-3">
+                    <li><em>Vulnerable Mode:</em> Rendered unescaped via <code>Markup()</code>; browser pops alert.</li>
+                    <li><em>Secure Mode:</em> Escaped into <code>&amp;lt;script&amp;gt;</code>; rendered safely as plain text.</li>
+                </ul>
+            </div>
+        </div>
+
+        {% elif request.path == '/support' %}
+        <!-- Module 2: Command Injection -->
+        <div class="drawer-card">
+            <div class="drawer-badge badge-warning">Module 2: OS Command Injection</div>
+            <h4>In-band Diagnostic Shell Execution</h4>
+            <p class="text-sm">Location: <strong>Campus Network Diagnostic</strong></p>
+
+            <div class="payload-box mb-2">
+                <strong>💡 1-Click Harmless Test Payloads:</strong>
+                <div class="btn-group-payloads mt-1">
+                    {% if is_windows %}
+                    <button type="button" class="btn btn-xs btn-outline-danger" onclick="fillDiagnosticForm('127.0.0.1 & echo [CAMPUS-IT-PROOF: Command Executed] & whoami')">
+                        Windows: <code>127.0.0.1 & echo [PROOF] & whoami</code>
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-xs btn-outline-danger" onclick="fillDiagnosticForm('127.0.0.1 ; echo [CAMPUS-IT-PROOF: Command Executed] ; whoami')">
+                        Linux: <code>127.0.0.1 ; echo [PROOF] ; whoami</code>
+                    </button>
+                    {% endif %}
+                    <button type="button" class="btn btn-xs btn-outline-secondary" onclick="fillDiagnosticForm('127.0.0.1')">
+                        Clean Host: <code>127.0.0.1</code>
+                    </button>
+                </div>
+            </div>
+
+            <div class="viva-summary-box text-sm">
+                <p><strong>Mechanics:</strong> <code>shell=True</code> parses metacharacters (<code>&amp;</code>, <code>;</code>) and chains execution.</p>
+                <p><strong>Expected Result:</strong></p>
+                <ul class="pl-3">
+                    <li><em>Vulnerable Mode:</em> Terminal returns ping output + executed output of <code>whoami</code>.</li>
+                    <li><em>Secure Mode:</em> Allow-list regex blocks input; <code>shell=False</code> prevents secondary execution.</li>
+                </ul>
+            </div>
+        </div>
+
+        {% elif request.path == '/profile' %}
+        <!-- Module 4: CSRF -->
+        <div class="drawer-card">
+            <div class="drawer-badge badge-info">Module 4: Cross-Site Request Forgery</div>
+            <h4>GET-based Forged Preference Update</h4>
+            <p class="text-sm">Location: <strong>Campus Notification Setting</strong></p>
+
+            <div class="payload-box mb-2">
+                <strong>⚔️ Cross-Origin Attacker Demonstration:</strong>
+                <p class="text-sm text-muted mt-1">
+                    An external phishing page on <code>http://localhost:5001</code> targets Alice's profile while she is logged into CampusConnect.
+                </p>
+                <a href="http://localhost:5001" target="_blank" class="btn btn-sm btn-danger btn-block mt-2">
+                    Open Simulated Attacker Page (Port 5001) &rarr;
+                </a>
+            </div>
+
+            <div class="viva-summary-box text-sm">
+                <p><strong>Mechanics:</strong> Top-level cross-site GET navigations attach <code>SameSite=Lax</code> ambient cookies.</p>
+                <p><strong>Expected Result:</strong></p>
+                <ul class="pl-3">
+                    <li><em>Vulnerable Mode:</em> Alice's preference changes to attacker-controlled value without her consent.</li>
+                    <li><em>Secure Mode:</em> GET is rejected (405); cross-origin POST without token is blocked (403).</li>
+                </ul>
+            </div>
+        </div>
+        {% else %}
+        <!-- General Dashboard View -->
+        <div class="drawer-card">
+            <h4>Laboratory Status Overview</h4>
+            <p class="text-sm text-muted">All four vulnerability modules are integrated into natural student portal flows:</p>
+            <ul class="text-sm pl-3">
+                <li><strong>Login:</strong> SQL Injection Authentication Bypass</li>
+                <li><strong>Notices:</strong> Reflected Cross-Site Scripting (XSS)</li>
+                <li><strong>Help & Support:</strong> OS Command Injection (In-band)</li>
+                <li><strong>My Profile:</strong> GET-based Cross-Site Request Forgery (CSRF)</li>
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Quick Reset Database -->
+        <div class="drawer-card">
+            <h4>Database State</h4>
+            <p class="text-sm text-muted">Resets SQLite database back to original seeded student accounts, password hashes, and notices:</p>
+            <button type="button" class="btn btn-sm btn-outline-warning btn-block" onclick="resetLabDatabase()">
+                🔄 Reset Lab Database to Baseline
+            </button>
+        </div>
+    </div>
+</aside>

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}CSRF Execution Result — Web Server Security Lab{% endblock %}
+
+{% block content %}
+<div class="module-header">
+    <div class="breadcrumb">
+        <a href="{{ url_for('index') }}">Dashboard</a> &gt; <a href="{{ url_for('csrf.csrf_index') }}">Module 4: CSRF</a> &gt; <span>Action Result</span>
+    </div>
+    <h1>CSRF Endpoint Execution Report</h1>
+</div>
+
+{% if variant == 'vulnerable' %}
+<div class="card mb-4 border-danger">
+    <div class="card-header bg-danger text-white">
+        <h3>🚨 VULNERABILITY CONFIRMED: Forged Request Succeeded!</h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-danger">
+            <strong>Security Finding:</strong> The application processed a state-changing operation via HTTP GET with ambient session credentials.
+        </div>
+        <div class="result-details">
+            <p><strong>Target Endpoint:</strong> <code>GET /csrf/vulnerable/update-status</code></p>
+            <p><strong>Victim Account:</strong> <code>{{ result.victim_username }}</code></p>
+            <p><strong>Previous Profile Status:</strong> <del>{{ result.previous_status }}</del></p>
+            <p><strong>Forged New Profile Status:</strong> <ins class="text-danger font-weight-bold">"{{ result.new_status }}"</ins></p>
+            <p><strong>Result:</strong> An external website (e.g. <code>http://localhost:5001</code>) successfully changed Alice's profile state!</p>
+        </div>
+        <div class="mt-4">
+            <a href="{{ url_for('csrf.csrf_index') }}" class="btn btn-primary">Return to CSRF Dashboard</a>
+            <a href="http://localhost:5001" class="btn btn-outline-danger">Return to Attacker Site (Port 5001)</a>
+        </div>
+    </div>
+</div>
+{% elif variant == 'secure_blocked' %}
+<div class="card mb-4 border-success">
+    <div class="card-header bg-success text-white">
+        <h3>🛡️ DEFENSE CONFIRMED: Forged Request Blocked!</h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-success">
+            <strong>Security Finding:</strong> The mitigation successfully detected and neutralized the unauthorized request.
+        </div>
+        <div class="result-details">
+            <p><strong>HTTP Status Code:</strong> <code>{{ result.status_code }}</code></p>
+            <p><strong>Defense Mechanism:</strong> {{ result.action }}</p>
+            <p><strong>Server Rejection Log:</strong></p>
+            <pre class="bg-light p-3 border rounded text-danger"><code>{{ result.error }}</code></pre>
+            <p><strong>Profile State:</strong> Alice's profile remains completely untouched and safe.</p>
+        </div>
+        <div class="mt-4">
+            <a href="{{ url_for('csrf.csrf_index') }}" class="btn btn-success">Return to CSRF Dashboard</a>
+            <a href="http://localhost:5001" class="btn btn-outline-secondary">Return to Attacker Site (Port 5001)</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

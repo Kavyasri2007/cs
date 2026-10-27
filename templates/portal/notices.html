@@ -1,0 +1,70 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Campus Notices & Circulars — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="portal-container">
+    <div class="page-header">
+        <div class="breadcrumb-clean">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a> &gt; <span>Campus Notices</span>
+        </div>
+        <h1 class="page-title">📢 Campus Announcements & Notices</h1>
+        <p class="page-subtitle">Official notifications from Academic Affairs, Student Gymkhana, and Administrative Departments</p>
+    </div>
+
+    <!-- Search Bar Card -->
+    <div class="portal-card mb-4">
+        <form action="{{ url_for('notices') }}" method="GET" class="search-form" id="noticeSearchForm">
+            <div class="search-input-group">
+                <input type="text" name="q" id="search_query" class="portal-input" placeholder="Search circulars by keyword, department, or topic..." value="{{ raw_query }}" autofocus>
+                <button type="submit" class="btn btn-primary">
+                    🔍 Search Notices
+                </button>
+                {% if raw_query %}
+                <a href="{{ url_for('notices') }}" class="btn btn-secondary">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Search Term Reflection -->
+        {% if raw_query %}
+        <div class="search-reflection-box mt-3">
+            <span>Filter active: Showing announcements matching </span>
+            <!-- Search query reflection: In vulnerable mode, unescaped via Markup; in secure mode, auto-escaped -->
+            <strong class="reflected-term">{{ rendered_query }}</strong>
+            <span class="text-muted">({{ notices|length }} circulars found)</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Harmless DOM Proof Banner (Triggered by DOM payloads for visual proof) -->
+    <div id="xss-exec-banner" class="portal-alert alert-danger mb-4" style="display: none; border-left: 4px solid #dc2626;">
+        <h4 style="margin: 0 0 5px 0;">🚨 PROOF OF JAVASCRIPT EXECUTION</h4>
+        <p style="margin: 0;">Reflected script or event handler executed successfully within the browser document context. (No cookies or sensitive data were accessed).</p>
+    </div>
+
+    <!-- Announcements Cards List -->
+    <div class="notices-board-grid">
+        {% for notice in notices %}
+        <div class="notice-card">
+            <div class="notice-card-header">
+                <span class="portal-badge badge-blue">{{ notice.category }}</span>
+                <span class="notice-date-text">📅 {{ notice.date_posted }}</span>
+            </div>
+            <h2 class="notice-card-title">{{ notice.title }}</h2>
+            <div class="notice-author-line">
+                <span>Issued by: <strong>{{ notice.author }}</strong></span>
+            </div>
+            <div class="notice-body-text">
+                <p>{{ notice.content }}</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="portal-card text-center py-5">
+            <p class="text-muted">No announcements match your search query: "<code>{{ raw_query }}</code>"</p>
+            <a href="{{ url_for('notices') }}" class="btn btn-sm btn-outline-primary mt-2">View All Active Notices</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

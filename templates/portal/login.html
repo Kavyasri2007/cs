@@ -1,0 +1,53 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Sign In — CampusConnect Student Portal{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-logo-circle">🎓</div>
+            <h2 class="login-title">Student Portal Login</h2>
+            <p class="login-subtitle">Sign in with your IIIT Allahabad institutional credentials</p>
+        </div>
+
+        {% if error %}
+        <div class="portal-alert alert-danger mb-3">
+            <span>⚠️ {{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form action="{{ url_for('login') }}" method="POST" class="portal-form" id="studentLoginForm">
+            <div class="form-group">
+                <label for="username">Student ID / Username</label>
+                <input type="text" name="username" id="username" class="portal-input" placeholder="e.g. S2023-042 or alice" required autofocus>
+                <small class="form-hint">Enrolled students: use Enrollment Number or portal username</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Portal Password</label>
+                <input type="password" name="password" id="password" class="portal-input" placeholder="••••••••••••" required>
+            </div>
+
+            <div class="form-options">
+                <label class="remember-me">
+                    <input type="checkbox" name="remember"> Remember this workstation
+                </label>
+                <a href="#" class="forgot-link" onclick="alert('For password reset assistance, please contact the CC-3 Computer Center Helpdesk with your student ID card.'); return false;">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg mt-3">
+                Sign In to CampusConnect &rarr;
+            </button>
+        </form>
+
+        <div class="login-footer-info">
+            <p><strong>Sample Student Credentials:</strong></p>
+            <div class="sample-creds-list">
+                <span>Student: <code>alice</code> / <code>Alice#Pass2026</code></span>
+                <span>Student: <code>bob</code> / <code>Bob$Project99</code></span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

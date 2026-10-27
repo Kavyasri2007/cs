@@ -1,0 +1,66 @@
+{% extends "portal/base.html" %}
+
+{% block title %}CSRF Demonstration Report — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="portal-container" style="max-width: 800px;">
+    <div class="page-header">
+        <div class="breadcrumb-clean">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a> &gt; <a href="{{ url_for('profile_view') }}">My Profile</a> &gt; <span>Preference Update Outcome</span>
+        </div>
+        <h1 class="page-title">Notification Preference Update Report</h1>
+    </div>
+
+    {% if variant == 'vulnerable' %}
+    <div class="portal-card" style="border-top: 4px solid #dc2626;">
+        <div class="card-header-clean d-flex justify-content-between align-items-center">
+            <h3 class="text-danger mb-0">🚨 VULNERABILITY CONFIRMED: Profile Preference Forged!</h3>
+            <span class="portal-badge badge-red">HTTP 200 OK (GET)</span>
+        </div>
+        <div class="card-body mt-2">
+            <div class="portal-alert alert-danger mb-3">
+                <strong>CSRF Flaw Confirmed:</strong> The application processed a state-changing operation via HTTP GET using the victim's ambient session credentials without validating intent.
+            </div>
+
+            <div class="detail-box p-3 bg-light rounded border text-sm">
+                <p><strong>Target Student Account:</strong> <code>{{ result.victim_name }} ({{ result.victim_username }})</code></p>
+                <p><strong>Previous Preference:</strong> <del>{{ result.previous_status }}</del></p>
+                <p><strong>Forged New Preference:</strong> <ins class="text-danger font-weight-bold">"{{ result.new_status }}"</ins></p>
+                <p><strong>Cross-Origin Result:</strong> A simulated external phishing website (on <code>http://localhost:5001</code>) successfully altered Alice's notification settings without her conscious consent!</p>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <a href="{{ url_for('profile_view') }}" class="btn btn-primary">Return to Student Profile</a>
+                <a href="http://localhost:5001" class="btn btn-outline-danger">Return to Attacker Site (Port 5001)</a>
+            </div>
+        </div>
+    </div>
+
+    {% elif variant == 'secure_blocked' %}
+    <div class="portal-card" style="border-top: 4px solid #16a34a;">
+        <div class="card-header-clean d-flex justify-content-between align-items-center">
+            <h3 class="text-success mb-0">🛡️ DEFENSE CONFIRMED: Forged Request Intercepted!</h3>
+            <span class="portal-badge badge-green">HTTP {{ result.status_code }}</span>
+        </div>
+        <div class="card-body mt-2">
+            <div class="portal-alert alert-success mb-3">
+                <strong>Mitigation Active:</strong> The application successfully identified and rejected the unauthorized cross-origin request.
+            </div>
+
+            <div class="detail-box p-3 bg-light rounded border text-sm">
+                <p><strong>HTTP Status Code:</strong> <code>{{ result.status_code }}</code></p>
+                <p><strong>Active Defense Mechanism:</strong> {{ result.action }}</p>
+                <p><strong>Server Rejection Message:</strong></p>
+                <pre class="bg-white p-2 border rounded text-danger"><code>{{ result.error }}</code></pre>
+                <p><strong>Integrity Status:</strong> Alice's notification preferences remain completely safe and unaltered.</p>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <a href="{{ url_for('profile_view') }}" class="btn btn-success">Return to Student Profile</a>
+                <a href="http://localhost:5001" class="btn btn-outline-secondary">Return to Attacker Site (Port 5001)</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

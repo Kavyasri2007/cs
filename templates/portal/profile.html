@@ -1,0 +1,132 @@
+{% extends "portal/base.html" %}
+
+{% block title %}My Student Profile — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="portal-container">
+    <div class="page-header">
+        <div class="breadcrumb-clean">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a> &gt; <span>My Profile</span>
+        </div>
+        <h1 class="page-title">👤 Student Profile & Institutional Preferences</h1>
+        <p class="page-subtitle">Academic registration records and communication preferences</p>
+    </div>
+
+    <div class="profile-layout-grid">
+        <!-- Left: Student Information Card -->
+        <div class="profile-col">
+            <div class="portal-card">
+                <div class="profile-badge-row">
+                    <div class="profile-avatar-large">👤</div>
+                    <div>
+                        <h2 class="profile-student-name">{{ user.full_name if user else 'Alice Sharma' }}</h2>
+                        <span class="portal-badge badge-blue">{{ user.role if user else 'Student' }}</span>
+                    </div>
+                </div>
+
+                <div class="profile-details-table mt-4">
+                    <div class="detail-row">
+                        <span class="detail-label">Enrollment / Student ID:</span>
+                        <span class="detail-val"><code>{{ user.student_id if user else 'S2023-042' }}</code></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Institutional Username:</span>
+                        <span class="detail-val"><code>{{ user.username if user else 'alice' }}</code></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Academic Department:</span>
+                        <span class="detail-val">{{ user.department if user else 'Computer Science & Engineering' }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Current Semester:</span>
+                        <span class="detail-val">{{ user.semester if user else 'VI Semester' }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Institutional Email:</span>
+                        <span class="detail-val">{{ user.email if user else 'alice.sharma@iiita.ac.in' }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Academic Advisor:</span>
+                        <span class="detail-val">Dr. Admin Prasad (Cyber Security Faculty)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Notification Channel & Preferences (Integrates CSRF) -->
+        <div class="profile-col">
+            <div class="portal-card">
+                <div class="card-header-clean">
+                    <h3>🔔 Campus Notification Preferences</h3>
+                    <p class="text-sm text-muted">Select how the institution should deliver examination circulars, emergency announcements, and grade alerts.</p>
+                </div>
+
+                <!-- Current Preference Badge -->
+                <div class="current-pref-box mb-3">
+                    <span class="text-sm text-muted d-block">Current Active Setting:</span>
+                    <strong class="pref-badge-text">
+                        "{{ user.notification_pref if user else 'Email & Portal Alerts' }}"
+                    </strong>
+                </div>
+
+                <!-- Preference Update Form -->
+                {% if demo_mode == 'vulnerable' %}
+                <!-- VULNERABLE MODE: Form uses HTTP GET without CSRF token -->
+                <form action="{{ url_for('update_preference') }}" method="GET" class="portal-form">
+                    <div class="form-group">
+                        <label for="pref_select">Update Notification Channel</label>
+                        <select name="preference" id="pref_select" class="portal-input">
+                            <option value="Email & Portal Alerts" {% if user and user.notification_pref == 'Email & Portal Alerts' %}selected{% endif %}>Email & Portal Alerts (Standard)</option>
+                            <option value="SMS Alerts Only" {% if user and user.notification_pref == 'SMS Alerts Only' %}selected{% endif %}>SMS Alerts Only (Urgent Only)</option>
+                            <option value="Emergency Broadcasts Only" {% if user and user.notification_pref == 'Emergency Broadcasts Only' %}selected{% endif %}>Emergency Broadcasts Only</option>
+                            <option value="All Notifications Muted" {% if user and user.notification_pref == 'All Notifications Muted' %}selected{% endif %}>All Notifications Muted</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Save Preferences (via GET)
+                    </button>
+                    <small class="text-muted d-block mt-2">
+                        <em>Form configured in Vulnerable Mode (uses HTTP GET).</em>
+                    </small>
+                </form>
+                {% else %}
+                <!-- SECURE MODE: Form uses HTTP POST with Cryptographic CSRF Token -->
+                <form action="{{ url_for('update_preference') }}" method="POST" class="portal-form">
+                    <!-- Cryptographic Synchronizer CSRF Token -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                    <div class="form-group">
+                        <label for="pref_select_sec">Update Notification Channel</label>
+                        <select name="preference" id="pref_select_sec" class="portal-input">
+                            <option value="Email & Portal Alerts" {% if user and user.notification_pref == 'Email & Portal Alerts' %}selected{% endif %}>Email & Portal Alerts (Standard)</option>
+                            <option value="SMS Alerts Only" {% if user and user.notification_pref == 'SMS Alerts Only' %}selected{% endif %}>SMS Alerts Only (Urgent Only)</option>
+                            <option value="Emergency Broadcasts Only" {% if user and user.notification_pref == 'Emergency Broadcasts Only' %}selected{% endif %}>Emergency Broadcasts Only</option>
+                            <option value="All Notifications Muted" {% if user and user.notification_pref == 'All Notifications Muted' %}selected{% endif %}>All Notifications Muted</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-block">
+                        Save Preferences (via Secure POST)
+                    </button>
+                    <small class="text-success d-block mt-2">
+                        🛡️ <em>Protected with Cryptographic Synchronizer Token over POST.</em>
+                    </small>
+                </form>
+                {% endif %}
+
+                <!-- Simulated Attacker Shortcut -->
+                <div class="mt-4 p-3 border rounded bg-light text-sm">
+                    <strong>⚔️ CSRF Cross-Origin Demonstration:</strong><br>
+                    An external phishing page running on <code>http://localhost:5001</code> can attempt to forge this setting while Alice is logged in.
+                    <div class="mt-2">
+                        <a href="http://localhost:5001" target="_blank" class="btn btn-xs btn-outline-danger">
+                            Open Attacker Demonstration Page (Port 5001) &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

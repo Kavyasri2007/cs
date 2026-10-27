@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Module 4: Cross-Site Request Forgery (CSRF) — GET-based Forged Action{% endblock %}
+
+{% block content %}
+<div class="module-header">
+    <div class="breadcrumb">
+        <a href="{{ url_for('index') }}">Dashboard</a> &gt; <span>Module 4: GET-based CSRF</span>
+    </div>
+    <div class="module-title-row">
+        <h1>Module 4: Cross-Site Request Forgery (CSRF)</h1>
+        <span class="badge badge-info">Variant: GET-based Forged Action</span>
+    </div>
+    <p class="module-lead">
+        Demonstrating how an untrusted third-party site abuses the victim's ambient authenticated browser session
+        to trigger unauthorized state-changing operations without user intent.
+    </p>
+</div>
+
+<!-- Section 1: Concept & Security Impact -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>1. Concept & Security Impact</h3>
+    </div>
+    <div class="card-body">
+        <p>
+            <strong>Cross-Site Request Forgery (CSRF)</strong> is a <em>confused deputy</em> attack where a malicious website causes a user's web browser
+            to perform an unwanted action on a trusted site where the user is currently authenticated.
+        </p>
+        <p>
+            <strong>Why Authentication Alone Fails:</strong> Browsers automatically attach stored credentials (session cookies) to cross-origin HTTP requests.
+            The receiving server verifies the valid session cookie and confirms <em>who</em> the user is, but has no intrinsic way to verify <em>intent</em>—i.e., whether the user intentionally initiated the request.
+        </p>
+        <div class="alert alert-info">
+            <strong>Harmless Educational Setting:</strong> To demonstrate CSRF safely, this lab modifies an educational profile setting (status message / notification preference) for the seeded dummy student account <code>alice</code>. No real-world financial, password, or sensitive actions are utilized.
+        </div>
+    </div>
+</div>
+
+<!-- Victim Session & Live State Monitor -->
+<div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">👤 Dummy Victim Session State (Target App: <code>http://127.0.0.1:5000</code>)</h4>
+        <div>
+            <a href="{{ url_for('csrf.login_as_alice') }}" class="btn btn-xs btn-light">Re-Authenticate as Alice</a>
+            <form action="{{ url_for('csrf.reset_status') }}" method="POST" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-xs btn-outline-light">Reset Status to Baseline</button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="victim-profile-display">
+            <div class="profile-item"><strong>Authenticated User:</strong> <code>{{ user.username if user else 'alice' }}</code> (Role: <em>{{ user.role if user else 'Research Scholar' }}</em>)</div>
+            <div class="profile-item">
+                <strong>Current Profile Status:</strong> 
+                <span class="status-badge" id="currentProfileStatus">
+                    "{{ user.profile_status if user else 'Working on Cyber Security Assignment (Module 4)' }}"
+                </span>
+            </div>
+            <div class="profile-item"><strong>Active Session Cookie:</strong> <code>lab_session</code> (Attached automatically by browser)</div>
+            <div class="profile-item"><strong>Generated Synchronizer Token:</strong> <code>{{ csrf_token }}</code></div>
+        </div>
+    </div>
+</div>
+
+<!-- Launch Attacker Server Guide Box -->
+<div class="card mb-4 border-danger">
+    <div class="card-header bg-danger text-white">
+        <h4>⚔️ Simulated Attacker Demonstration Site (Origin: <code>http://localhost:5001</code>)</h4>
+    </div>
+    <div class="card-body">
+        <p>
+            To realistically demonstrate CSRF across separate web origins, this lab runs a dedicated attacker server on <strong>port 5001</strong>.
+        </p>
+        <div class="step-guide mb-3">
+            <ol>
+                <li>Ensure the attacker server is running in a second terminal: <code>python attacker_server.py</code></li>
+                <li>While logged into this target app (above), open the attacker page:
+                    <a href="http://localhost:5001" target="_blank" class="btn btn-sm btn-danger ml-2 font-weight-bold">
+                        Open Malicious Attacker Site (http://localhost:5001) &rarr;
+                    </a>
+                </li>
+                <li>On the attacker page, trigger the <strong>Top-Level Navigation GET Attack</strong>.</li>
+                <li>Observe that Alice's profile status is forged and changed without her consent!</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<!-- Side-by-Side Demonstrations Grid -->
+<div class="row-grid mb-4">
+    <!-- Vulnerable Implementation Column -->
+    <div class="column-card vulnerable-card">
+        <div class="card-status-strip strip-vulnerable">
+            <span>⚠️ INTENTIONALLY VULNERABLE ENDPOINT (STATE-CHANGING GET)</span>
+        </div>
+        <div class="card-body">
+            <h4>2. Vulnerable Action Handler</h4>
+            <p class="text-sm text-muted">
+                Endpoint: <code>GET /csrf/vulnerable/update-status?status=...</code><br>
+                Flaw: Modifies database state on HTTP GET without validating request origin or token.
+            </p>
+
+            <form action="{{ url_for('csrf.vulnerable_update_status') }}" method="GET" class="lab-form">
+                <div class="form-group">
+                    <label for="vuln_status">Change Status via Vulnerable GET:</label>
+                    <input type="text" name="status" id="vuln_status" class="form-control" value="Direct Test: Status modified by user form" required>
+                </div>
+
+                <div class="payload-box mb-3">
+                    <span class="payload-title">💡 Forged Query Examples (Used by Attacker):</span>
+                    <div class="btn-group-payloads">
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="document.getElementById('vuln_status').value='Attacker Hijacked Alice Profile (Unsafe GET)';">
+                            Load Attacker Payload
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-danger btn-block">
+                    Submit State Change via GET
+                </button>
+            </form>
+            <small class="text-muted mt-2 d-block">
+                Notice: Because this state-change uses HTTP GET, an external site can link or redirect to this URL, causing the browser to execute it with cookies attached!
+            </small>
+        </div>
+    </div>
+
+    <!-- Secure Implementation Column -->
+    <div class="column-card secure-card">
+        <div class="card-status-strip strip-secure">
+            <span>🛡️ SECURE MITIGATED HANDLER (SYNCHRONIZER TOKEN OVER POST)</span>
+        </div>
+        <div class="card-body">
+            <h4>6. Secure Mitigated Action</h4>
+            <p class="text-sm text-muted">
+                Endpoint: <code>POST /csrf/secure/update-status</code><br>
+                Fix: Rejects GET (405) + enforces POST with cryptographic CSRF token.
+            </p>
+
+            <form action="{{ url_for('csrf.secure_update_status') }}" method="POST" class="lab-form">
+                <!-- Cryptographic Synchronizer Token -->
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <div class="form-group">
+                    <label for="sec_status">Change Status via Secure POST:</label>
+                    <input type="text" name="status" id="sec_status" class="form-control" value="Legitimate Status: Updated securely with valid token" required>
+                </div>
+
+                <div class="payload-box mb-3">
+                    <span class="payload-title">🛡️ Token Protection:</span>
+                    <small class="d-block text-muted">
+                        Contains hidden token: <code>{{ csrf_token[:16] }}...</code><br>
+                        Cross-origin attacker cannot read this secret token due to the Same-Origin Policy (SOP).
+                    </small>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-block">
+                    Submit State Change via Secure POST
+                </button>
+            </form>
+
+            <div class="mt-3">
+                <a href="{{ url_for('csrf.secure_update_status', status='Illegal+GET+Attempt') }}" class="btn btn-xs btn-outline-danger btn-block">
+                    Test Attack: Try Calling Secure Endpoint with GET (Expect 405)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 4 & 5: Root Cause and Code Excerpts -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>5. Root Cause & Source Code Comparison</h3>
+    </div>
+    <div class="card-body">
+        <div class="code-comparison-grid">
+            <div class="code-col">
+                <h5 class="text-danger">❌ Vulnerable Implementation (Root Cause)</h5>
+                <p class="text-muted text-sm">Alters state upon receiving an HTTP GET request:</p>
+                <pre><code class="language-python">{{ vulnerable_code }}</code></pre>
+                <div class="alert alert-danger mt-2">
+                    <strong>Mechanics:</strong> HTTP GET requests are designed to be safe/idempotent. Because the endpoint accepts GET, the attacker site triggers a top-level cross-site GET navigation. Under default browser <code>SameSite=Lax</code> policies, top-level navigations send the session cookie, and the server blindly mutates state.
+                </div>
+            </div>
+            <div class="code-col">
+                <h5 class="text-success">✅ Secure Implementation (CSRF Token & Disallowing GET)</h5>
+                <p class="text-muted text-sm">Rejects GET requests with 405 + requires valid CSRF token on POST:</p>
+                <pre><code class="language-python">{{ secure_code }}</code></pre>
+                <div class="alert alert-success mt-2">
+                    <strong>Mechanics:</strong> 1) GET requests return HTTP 405. 2) POST requests require a matching <code>csrf_token</code> generated by the server session. Because of SOP, the attacker cannot read the token, making forgery mathematically impossible.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 8: Before-and-After Comparison Table -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>8. Before-and-After Results Comparison</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Request Type & Origin</th>
+                        <th>Vulnerable Endpoint Response</th>
+                        <th>Secure Endpoint Response</th>
+                        <th>Underlying Security Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Cross-Origin Forged GET</strong> (from <code>localhost:5001</code>)</td>
+                        <td><span class="badge badge-danger">200 OK</span> Profile status updated without consent</td>
+                        <td><span class="badge badge-success">405 Method Not Allowed</span> Rejected immediately</td>
+                        <td>Secure endpoint forbids state mutation on GET requests.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cross-Origin Forged POST</strong> (missing CSRF token)</td>
+                        <td>N/A (Endpoint only accepts GET)</td>
+                        <td><span class="badge badge-success">403 Forbidden</span> Rejected</td>
+                        <td>Missing or mismatched synchronizer token aborts state modification.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Legitimate POST with Valid Token</strong> (within target app)</td>
+                        <td>N/A</td>
+                        <td><span class="badge badge-success">200 OK</span> Profile status updated securely</td>
+                        <td>Token matches session secret in constant time; user intent verified.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Section 9 & 10: Viva Preparation & Explanations -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h3>9 & 10. Viva Preparation: Questions, Answers & Alternative Mitigations</h3>
+    </div>
+    <div class="card-body">
+        <div class="accordion">
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q1: Why does authenticated session alone not prove user intent?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> Web browsers operate on an ambient credential model: whenever an HTTP request is made to a domain, the browser automatically attaches all cookies stored for that domain. The server receives the cookie and can verify <em>identity</em> ("This is Alice's session"), but cannot discern whether the request was generated by Alice intentionally clicking a button on the real site, or silently forged by malicious JavaScript on an external third-party site.
+                    </p>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q2: How does the SameSite cookie attribute behave (Lax vs Strict vs None)?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> The <code>SameSite</code> attribute directs the browser when to send cookies with cross-site requests:
+                    </p>
+                    <ul>
+                        <li><strong>SameSite=Strict:</strong> The cookie is never sent in cross-site requests, even when following a regular link from an external site. Provides maximum CSRF protection, but degrades user experience when following external links.</li>
+                        <li><strong>SameSite=Lax (Modern Browser Default):</strong> Withholds cookies on cross-site subresource requests (e.g. <code>&lt;img&gt;</code>, <code>&lt;iframe&gt;</code>, <code>fetch()</code>), <strong>BUT sends cookies on top-level cross-site GET navigations</strong> (e.g. clicking a link <code>&lt;a href&gt;</code>). This is why state-changing GET endpoints remain dangerously vulnerable to CSRF even in modern browsers!</li>
+                        <li><strong>SameSite=None:</strong> Cookies are sent in all cross-site contexts (requires the <code>Secure</code> HTTPS flag in modern browsers).</li>
+                    </ul>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q3: How does the Synchronizer Token Pattern work?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> When a user begins a session, the server generates a cryptographically random, unguessable secret token and stores it in the server-side session. When rendering forms, the server embeds this token into a hidden input field. Upon form submission, the server compares the submitted token against the stored session token using constant-time string comparison (<code>hmac.compare_digest</code>). Because the browser's Same-Origin Policy (SOP) prevents external origins from reading DOM content on the target site, an attacker cannot retrieve or guess the token.
+                    </p>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q4: What is the fundamental difference between CSRF and XSS?</summary>
+                <div class="viva-answer mt-2">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr><th>Dimension</th><th>Cross-Site Scripting (XSS)</th><th>Cross-Site Request Forgery (CSRF)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><strong>Execution</strong></td><td>Executes arbitrary malicious code <em>inside</em> the vulnerable application's origin.</td><td>Issues unauthorized requests <em>across origins</em> to the target application.</td></tr>
+                                <tr><td><strong>Trust Exploitation</strong></td><td>Exploits the user's trust in the application.</td><td>Exploits the application's trust in the user's browser.</td></tr>
+                                <tr><td><strong>Attacker Visibility</strong></td><td>Can read DOM, capture keys, steal non-HttpOnly tokens.</td><td>Blind attack: attacker triggers an action but cannot read the response due to SOP.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Module 1: SQL Injection (SQLi) — Authentication Bypass{% endblock %}
+
+{% block content %}
+<div class="module-header">
+    <div class="breadcrumb">
+        <a href="{{ url_for('index') }}">Dashboard</a> &gt; <span>Module 1: SQL Injection</span>
+    </div>
+    <div class="module-title-row">
+        <h1>Module 1: SQL Injection (SQLi)</h1>
+        <span class="badge badge-danger">Variant: Authentication Bypass via Tautology</span>
+    </div>
+    <p class="module-lead">
+        Demonstrating how direct string concatenation allows user input to break out of data literals,
+        restructure the SQL query grammar, and authenticate without valid credentials.
+    </p>
+</div>
+
+<!-- Section 1: Concept & Security Impact -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>1. Concept & Security Impact</h3>
+    </div>
+    <div class="card-body">
+        <p>
+            <strong>SQL Injection (SQLi)</strong> occurs when untrusted user input is directly concatenated or formatted into a database command
+            string instead of being handled as pure literal data. The database interpreter cannot distinguish between the developer's intended SQL commands
+            and the injected metacharacters (e.g. quotes <code>'</code>, hyphens <code>--</code>, Boolean operators <code>OR</code>).
+        </p>
+        <p>
+            <strong>Impact in Authentication Bypass:</strong> An attacker can supply a Boolean tautology (such as <code>' OR '1'='1</code>) that makes
+            the query's <code>WHERE</code> condition universally evaluate to <code>TRUE</code>. Consequently, the query returns the first account in the table
+            (frequently the administrative account), effectively granting unauthorized administrative access.
+        </p>
+    </div>
+</div>
+
+<!-- Side-by-Side Demonstrations Grid -->
+<div class="row-grid mb-4">
+    <!-- Vulnerable Implementation Column -->
+    <div class="column-card vulnerable-card">
+        <div class="card-status-strip strip-vulnerable">
+            <span>⚠️ INTENTIONALLY VULNERABLE IMPLEMENTATION (LOCAL LAB ONLY)</span>
+        </div>
+        <div class="card-body">
+            <h4>2. Vulnerable Login Handler</h4>
+            <p class="text-sm text-muted">
+                Endpoint: <code>POST /sqli/vulnerable/login</code><br>
+                Flaw: Constructs SQL query using Python f-string concatenation.
+            </p>
+
+            <form action="{{ url_for('sqli.vulnerable_login') }}" method="POST" class="lab-form" id="vulnerableSqliForm">
+                <div class="form-group">
+                    <label for="vuln_username">Username:</label>
+                    <input type="text" name="username" id="vuln_username" class="form-control" placeholder="e.g. admin or payload" required>
+                </div>
+                <div class="form-group">
+                    <label for="vuln_password">Password:</label>
+                    <input type="password" name="password" id="vuln_password" class="form-control" placeholder="e.g. any password">
+                </div>
+                
+                <div class="payload-box mb-3">
+                    <span class="payload-title">💡 1-Click Harmless Exploit Payloads:</span>
+                    <div class="btn-group-payloads">
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="loadSqliPayload('vuln', '\' OR \'1\'=\'1\' --', 'dummy')">
+                            Load <code>' OR '1'='1' --</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="loadSqliPayload('vuln', 'admin\' --', 'dummy')">
+                            Load <code>admin' --</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary" onclick="loadSqliPayload('vuln', 'alice', 'wrongpass')">
+                            Load Normal Wrong Pass
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-danger btn-block">
+                    Test Vulnerable Authentication
+                </button>
+            </form>
+
+            <!-- Observable Vulnerable Result -->
+            {% if vulnerable_result %}
+            <div class="result-box mt-3 {% if vulnerable_result.auth_success %}result-danger{% else %}result-neutral{% endif %}">
+                <h5>Demonstration Output:</h5>
+                <div class="result-item"><strong>Status:</strong> 
+                    {% if vulnerable_result.auth_success %}
+                        <span class="text-danger font-weight-bold">🚨 EXPLOIT SUCCEEDED: Authentication Bypassed!</span>
+                    {% else %}
+                        <span class="text-muted">{{ vulnerable_result.error_message }}</span>
+                    {% endif %}
+                </div>
+                <div class="result-item"><strong>Input Username:</strong> <code>{{ vulnerable_result.username_input }}</code></div>
+                <div class="result-item"><strong>Executed SQL Query:</strong><br>
+                    <pre><code class="language-sql">{{ vulnerable_result.executed_query }}</code></pre>
+                </div>
+                {% if vulnerable_result.auth_success %}
+                <div class="result-item"><strong>Authenticated User Record:</strong>
+                    <div class="user-badge">
+                        <span>👤 Username: <strong>{{ vulnerable_result.user_info.username }}</strong></span> | 
+                        <span>🏷️ Role: <strong>{{ vulnerable_result.user_info.role }}</strong></span> |
+                        <span>📝 Status: {{ vulnerable_result.user_info.profile_status }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Secure Implementation Column -->
+    <div class="column-card secure-card">
+        <div class="card-status-strip strip-secure">
+            <span>🛡️ SECURE MITIGATED IMPLEMENTATION (PARAMETERISED)</span>
+        </div>
+        <div class="card-body">
+            <h4>6. Secure Mitigated Handler</h4>
+            <p class="text-sm text-muted">
+                Endpoint: <code>POST /sqli/secure/login</code><br>
+                Fix: Prepared statements with bound parameters + PBKDF2/SHA-256 hashing.
+            </p>
+
+            <form action="{{ url_for('sqli.secure_login') }}" method="POST" class="lab-form" id="secureSqliForm">
+                <div class="form-group">
+                    <label for="sec_username">Username:</label>
+                    <input type="text" name="username" id="sec_username" class="form-control" placeholder="e.g. admin or payload" required>
+                </div>
+                <div class="form-group">
+                    <label for="sec_password">Password:</label>
+                    <input type="password" name="password" id="sec_password" class="form-control" placeholder="e.g. any password">
+                </div>
+
+                <div class="payload-box mb-3">
+                    <span class="payload-title">💡 Retest Identical Payloads:</span>
+                    <div class="btn-group-payloads">
+                        <button type="button" class="btn btn-xs btn-outline-success" onclick="loadSqliPayload('sec', '\' OR \'1\'=\'1\' --', 'dummy')">
+                            Retest <code>' OR '1'='1' --</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-success" onclick="loadSqliPayload('sec', 'admin\' --', 'dummy')">
+                            Retest <code>admin' --</code>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary" onclick="loadSqliPayload('sec', 'admin', 'Admin@123_Secure!')">
+                            Legitimate Admin Login
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-block">
+                    Test Secure Authentication
+                </button>
+            </form>
+
+            <!-- Observable Secure Result -->
+            {% if secure_result %}
+            <div class="result-box mt-3 {% if secure_result.auth_success %}result-success{% else %}result-shielded{% endif %}">
+                <h5>Mitigation Output:</h5>
+                <div class="result-item"><strong>Status:</strong> 
+                    {% if secure_result.auth_success %}
+                        <span class="text-success font-weight-bold">✅ LEGITIMATE LOGIN: Valid credentials verified!</span>
+                    {% else %}
+                        <span class="text-success font-weight-bold">🛡️ INJECTION NEUTRALIZED: {{ secure_result.error_message }}</span>
+                    {% endif %}
+                </div>
+                <div class="result-item"><strong>Input Username:</strong> <code>{{ secure_result.username_input }}</code></div>
+                <div class="result-item"><strong>Database Execution Details:</strong><br>
+                    <pre><code class="language-sql">{{ secure_result.executed_query }}</code></pre>
+                </div>
+                {% if secure_result.auth_success %}
+                <div class="result-item"><strong>Authenticated User Record:</strong>
+                    <div class="user-badge">
+                        <span>👤 Username: <strong>{{ secure_result.user_info.username }}</strong></span> | 
+                        <span>🏷️ Role: <strong>{{ secure_result.user_info.role }}</strong></span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Section 4 & 5: Root Cause and Code Excerpts -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>5. Root Cause & Source Code Comparison</h3>
+    </div>
+    <div class="card-body">
+        <div class="code-comparison-grid">
+            <div class="code-col">
+                <h5 class="text-danger">❌ Vulnerable Implementation (Root Cause)</h5>
+                <p class="text-muted text-sm">Direct f-string concatenation mixes data with query syntax:</p>
+                <pre><code class="language-python">{{ vulnerable_code }}</code></pre>
+                <div class="alert alert-danger mt-2">
+                    <strong>Mechanics:</strong> When the payload <code>' OR '1'='1</code> is passed, the query becomes:
+                    <code>... WHERE username = '' OR '1'='1' AND password_plain = '...'</code>. Because <code>'1'='1'</code> is true, the condition evaluates to true for rows in the table.
+                </div>
+            </div>
+            <div class="code-col">
+                <h5 class="text-success">✅ Secure Implementation (Parameterized Query)</h5>
+                <p class="text-muted text-sm">Separates query logic from user parameters at the protocol level:</p>
+                <pre><code class="language-python">{{ secure_code }}</code></pre>
+                <div class="alert alert-success mt-2">
+                    <strong>Mechanics:</strong> The database engine parses the SQL syntax first. When the user supplies <code>' OR '1'='1</code>, it is treated strictly as an exact string literal to compare against the column <code>username</code>.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 8: Before-and-After Comparison Table -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>8. Before-and-After Results Comparison</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Test Input (Username)</th>
+                        <th>Vulnerable Route Result</th>
+                        <th>Secure Route Result</th>
+                        <th>Security Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>' OR '1'='1</code></td>
+                        <td><span class="badge badge-danger">Bypass Succeeded</span> Logged in as Admin</td>
+                        <td><span class="badge badge-success">Rejected (401/Failed)</span> Authentication Denied</td>
+                        <td>In secure route, input is bound as literal value. No row exists where username equals <code>' OR '1'='1</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>admin' --</code></td>
+                        <td><span class="badge badge-danger">Bypass Succeeded</span> Password check commented out</td>
+                        <td><span class="badge badge-success">Rejected</span> Authentication Denied</td>
+                        <td>The <code>--</code> characters are treated as literal characters, not SQL comment syntax.</td>
+                    </tr>
+                    <tr>
+                        <td><code>alice</code> (wrong password)</td>
+                        <td><span class="badge badge-secondary">Rejected</span> Authentication Failed</td>
+                        <td><span class="badge badge-secondary">Rejected</span> Authentication Failed</td>
+                        <td>Normal failed logins remain rejected across both implementations.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Section 9 & 10: Viva Preparation & Explanations -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h3>9 & 10. Viva Preparation: Questions, Answers & Alternative Mitigations</h3>
+    </div>
+    <div class="card-body">
+        <div class="accordion">
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q1: What is SQL Injection and why is string concatenation dangerous?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> SQL Injection is a vulnerability where an attacker manipulates the data input stream to alter the SQL interpreter's control plane.
+                        String concatenation is dangerous because it mixes executable SQL commands with untrusted user data in the same lexical channel. When special characters (like quotes <code>'</code>) are concatenated, the database SQL parser mistakes user input for SQL syntax instructions.
+                    </p>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q2: How exactly do Parameterised Queries (Prepared Statements) prevent SQLi?</summary>
+                <div class="viva-answer mt-2">
+                    <p>
+                        <strong>Answer:</strong> In prepared statements, the database compiles and parses the query structure <em>before</em> binding the data values. Placeholders (such as <code>?</code> or <code>:name</code>) designate parameter locations. When values are subsequently supplied, the database protocol treats them exclusively as literal constants within an established parse tree. Even if a value contains quotes or SQL commands, it cannot change the syntax or logic of the query.
+                    </p>
+                </div>
+            </details>
+
+            <details class="viva-item mb-3">
+                <summary class="viva-question">Q3: What other defense-in-depth mitigations should be discussed in the viva?</summary>
+                <div class="viva-answer mt-2">
+                    <ul>
+                        <li><strong>Input Allow-Lists:</strong> Validate that usernames adhere to strict formats (e.g. alphanumeric only) before reaching query logic.</li>
+                        <li><strong>Principle of Least Privilege:</strong> Configure the web application's database account with minimal permissions (e.g. read/write only on necessary tables, no permissions to <code>DROP</code> or access system catalogs).</li>
+                        <li><strong>Safe Error Handling:</strong> Never display raw database errors or stack traces in HTTP responses; return generic messages to avoid aiding attacker reconnaissance.</li>
+                        <li><strong>Object-Relational Mapping (ORM):</strong> Modern ORMs (like SQLAlchemy) use parameterized queries under the hood by default.</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+{% endblock %}

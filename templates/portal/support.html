@@ -1,0 +1,101 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Help & Support — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="portal-container">
+    <div class="page-header">
+        <div class="breadcrumb-clean">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a> &gt; <span>Help & Support</span>
+        </div>
+        <h1 class="page-title">🛠️ Campus IT Helpdesk & Support</h1>
+        <p class="page-subtitle">Submit technical assistance requests and run intranet connectivity diagnostics</p>
+    </div>
+
+    <div class="support-grid">
+        <!-- Left: Campus Network Diagnostic Utility (Integrates Command Injection) -->
+        <div class="support-col">
+            <div class="portal-card">
+                <div class="card-header-clean">
+                    <h3>🌐 Campus Network Connectivity Diagnostic</h3>
+                    <p class="text-sm text-muted">Test ICMP connectivity to hostel Wi-Fi routers, intranet servers, or institutional gateways.</p>
+                </div>
+
+                <form action="{{ url_for('support') }}" method="POST" class="portal-form" id="networkDiagnosticForm">
+                    <div class="form-group">
+                        <label for="diagnostic_target">Target Gateway or Intranet Host</label>
+                        <input type="text" name="target" id="diagnostic_target" class="portal-input" placeholder="e.g. 127.0.0.1 or gateway.iiita.ac.in" value="{{ diagnostic_result.target if diagnostic_result else '127.0.0.1' }}" required>
+                        <small class="form-hint">Default loopback address: <code>127.0.0.1</code> (Core Intranet Gateway)</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        ⚡ Run Network Ping Diagnostic
+                    </button>
+                </form>
+
+                <!-- Diagnostic Terminal Standard Output -->
+                {% if diagnostic_result %}
+                <div class="diagnostic-result-section mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>Diagnostic Terminal Output:</strong>
+                        <span class="portal-badge {% if diagnostic_result.success %}badge-green{% else %}badge-red{% endif %}">
+                            {% if diagnostic_result.success %}Execution Finished{% else %}Filter Rejected{% endif %}
+                        </span>
+                    </div>
+
+                    <pre class="portal-terminal-box"><code>{{ diagnostic_result.output }}</code></pre>
+
+                    {% if diagnostic_result.command %}
+                    <small class="text-muted d-block mt-1">
+                        Command invoked: <code>{{ diagnostic_result.command }}</code>
+                    </small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right: General IT Support Ticket Request Form -->
+        <div class="support-col">
+            <div class="portal-card">
+                <div class="card-header-clean">
+                    <h3>🎫 Submit IT Helpdesk Ticket</h3>
+                    <p class="text-sm text-muted">For hostel room LAN issues, lab workstation access, or library kiosk repairs.</p>
+                </div>
+
+                <form action="#" method="POST" onsubmit="alert('Support ticket submitted successfully! Ticket Reference ID: CC-2026-' + Math.floor(1000 + Math.random() * 9000)); return false;" class="portal-form">
+                    <div class="form-group">
+                        <label for="issue_cat">Issue Category</label>
+                        <select id="issue_cat" class="portal-input">
+                            <option>Hostel Wi-Fi / LAN Port Connectivity</option>
+                            <option>Laboratory Workstation Login Issue</option>
+                            <option>Institutional Email Access Problem</option>
+                            <option>Central Library Kiosk Terminal</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="location">Location / Hostel & Room Number</label>
+                        <input type="text" id="location" class="portal-input" placeholder="e.g. Boys Hostel-4, Room 214" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="desc">Description of Technical Issue</label>
+                        <textarea id="desc" class="portal-input" rows="3" placeholder="Provide details regarding the connectivity or hardware fault..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-secondary btn-block">
+                        Submit Support Ticket
+                    </button>
+                </form>
+
+                <div class="mt-4 p-3 border rounded bg-light text-sm text-muted">
+                    <strong>Computer Center Helpdesk:</strong><br>
+                    CC-3 Building, Room 102 • Extension: 2124<br>
+                    Hours: Monday - Friday, 09:00 AM - 05:30 PM
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

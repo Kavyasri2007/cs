@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Food Deals — External Phishing Site (Port 5001)</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #22c55e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+        }
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+        .phishing-banner {
+            background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
+            border: 2px solid var(--danger);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+        }
+        .origin-badge {
+            display: inline-block;
+            background-color: var(--danger);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            margin-top: 0;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.15rem;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-warning { background-color: var(--warning); color: #000; }
+        .btn-secondary { background-color: #475569; color: white; }
+        .alert-box {
+            background-color: rgba(245, 158, 11, 0.15);
+            border-left: 4px solid var(--warning);
+            padding: 12px 16px;
+            margin: 15px 0;
+            font-size: 0.88rem;
+            color: #fef3c7;
+        }
+        .alert-danger {
+            background-color: rgba(239, 68, 68, 0.15);
+            border-left: 4px solid var(--danger);
+            color: #fca5a5;
+        }
+        .code-box {
+            background-color: #0b1120;
+            border: 1px solid #1e293b;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: Consolas, monospace;
+            font-size: 0.84rem;
+            color: #94a3b8;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .back-link {
+            color: #60a5fa;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Phishing Header -->
+        <div class="phishing-banner">
+            <span class="origin-badge">⚔️ SIMULATED EXTERNAL ORIGIN: http://localhost:5001</span>
+            <h1 style="margin: 0 0 8px 0; font-size: 1.6rem;">Exclusive Campus Food Voucher & Student Survey</h1>
+            <p style="margin: 0; color: #fecaca; font-size: 0.9rem;">
+                Target Victim Portal: <code>{{ target_origin }}</code> (CampusConnect Student Portal)
+            </p>
+        </div>
+
+        <div class="alert-box">
+            <strong>🎓 Cross-Origin Mechanics (Same-Origin Policy):</strong><br>
+            This page is served from <code>http://localhost:5001</code>. The victim's portal is at <code>http://127.0.0.1:5000</code>. Because their hostnames and ports differ, the browser enforces cross-origin boundaries.
+        </div>
+
+        <!-- Attack Vector 1: Top-Level Navigation GET Attack -->
+        <div class="card" style="border-left: 4px solid var(--danger);">
+            <h3 class="card-title">
+                <span>🎯 Attack Vector 1: Top-Level Navigation GET Exploit (Succeeds)</span>
+            </h3>
+            <p class="text-sm">
+                The student (Alice) is tricked into clicking this link while authenticated into CampusConnect.
+            </p>
+            <div class="code-box">
+                &lt;!-- Forged Top-Level GET Navigation --&gt;<br>
+                &lt;a href="{{ target_origin }}/profile/update-preference?preference=Compromised+by+Phishing+Attack"&gt;<br>
+                &nbsp;&nbsp;Claim Free 50% Campus Cafeteria Coupon!<br>
+                &lt;/a&gt;
+            </div>
+            <div class="alert-box alert-danger">
+                <strong>Why SameSite=Lax permits this exploit:</strong><br>
+                Under modern browser default <code>SameSite=Lax</code>, <strong>ambient session cookies ARE transmitted on top-level cross-site GET navigations</strong> (such as link clicks or window redirections). When Alice's browser navigates to the target URL, her session cookie is sent, and the vulnerable server mutates her notification preferences!
+            </div>
+            <a href="{{ target_origin }}/profile/update-preference?preference=Compromised+by+Phishing+Attack" class="btn btn-danger">
+                🚀 Launch Top-Level GET Attack (Forges Alice's Preference)
+            </a>
+        </div>
+
+        <!-- Attack Vector 2: Subresource Demonstration -->
+        <div class="card" style="border-left: 4px solid var(--warning);">
+            <h3 class="card-title">
+                <span>🔍 Attack Vector 2: Cross-Site Subresource (Fetch/Img) Analysis</span>
+            </h3>
+            <p class="text-sm">
+                What happens if this attacker page attempts a hidden background request (e.g. <code>fetch()</code> or <code>&lt;img&gt;</code>)?
+            </p>
+            <div class="code-box">
+                fetch('{{ target_origin }}/profile/update-preference?preference=Hidden+Fetch', { credentials: 'include' });
+            </div>
+            <div class="alert-box">
+                <strong>Modern Browser Behavior:</strong><br>
+                Modern browsers with <code>SameSite=Lax</code> <strong>withhold cookies on cross-site subresource requests</strong>. Hence, subresource requests arrive unauthenticated (401), while top-level navigations (Vector 1 above) succeed.
+            </div>
+            <button type="button" class="btn btn-warning" onclick="testSubresourceFetch()">
+                Test Cross-Site Subresource Fetch
+            </button>
+            <div id="subresourceResult" style="margin-top: 10px; font-size: 0.85rem; color: #94a3b8;"></div>
+        </div>
+
+        <!-- Attack Vector 3: Testing Against Mitigated Secure Endpoint -->
+        <div class="card" style="border-left: 4px solid var(--success);">
+            <h3 class="card-title">
+                <span>🛡️ Attack Vector 3: Retesting Against Mitigated Secure Portal Endpoint</span>
+            </h3>
+            <p class="text-sm">
+                When Demo Mode is set to <strong>Secure Mitigated</strong> in CampusConnect:
+            </p>
+
+            <div style="margin-bottom: 16px;">
+                <strong>Attempt A: Using Top-Level GET Navigation</strong>
+                <p style="margin: 4px 0; font-size: 0.85rem; color: var(--text-muted);">
+                    Target URL: <code>{{ target_origin }}/profile/update-preference</code>
+                </p>
+                <a href="{{ target_origin }}/profile/update-preference?preference=Attacker+GET+Attempt" class="btn btn-secondary">
+                    Test GET on Secure Endpoint (Expect HTTP 405 Method Not Allowed)
+                </a>
+            </div>
+
+            <div>
+                <strong>Attempt B: Using Cross-Site POST Form (Without CSRF Token)</strong>
+                <p style="margin: 4px 0; font-size: 0.85rem; color: var(--text-muted);">
+                    The attacker attempts a POST request. Because Same-Origin Policy (SOP) prevents reading Alice's secret synchronizer token:
+                </p>
+                <form action="{{ target_origin }}/profile/update-preference" method="POST" style="margin-top: 6px;">
+                    <input type="hidden" name="preference" value="Attacker Forged POST Without Token">
+                    <button type="submit" class="btn btn-secondary">
+                        Submit Forged POST without Token (Expect HTTP 403 Forbidden)
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div>
+            <a href="{{ target_origin }}/profile" class="back-link">&larr; Return to CampusConnect Student Portal (Port 5000)</a>
+        </div>
+    </div>
+
+    <script>
+        function testSubresourceFetch() {
+            const out = document.getElementById('subresourceResult');
+            out.innerHTML = 'Sending cross-site fetch with credentials to target...';
+            fetch('{{ target_origin }}/profile/update-preference?preference=Subresource+Attempt', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(res => res.json())
+            .then(data => {
+                out.innerHTML = '<span style="color: #22c55e;">Response received: ' + JSON.stringify(data) + '</span>';
+            })
+            .catch(err => {
+                out.innerHTML = '<span style="color: #ef4444;">Subresource request blocked or unauthenticated due to cross-origin SameSite=Lax policy. (Expected defensive behavior for subresources).</span>';
+            });
+        }
+    </script>
+</body>
+</html>
